@@ -1,0 +1,1 @@
+For streamlit: python -m streamlit run
