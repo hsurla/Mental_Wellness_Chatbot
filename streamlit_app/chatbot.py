@@ -1,15 +1,26 @@
 # streamlit_app/chatbot.py
 
-import random
-import nltk
+from nltk.sentiment import SentimentIntensityAnalyzer
 from database.database import log_chat, log_mood, flag_crisis
+import nltk
+nltk.download('vader_lexicon')
 
-# Dummy emotion detection (later we improve)
+sia = SentimentIntensityAnalyzer()
+
 def detect_emotion(user_message):
-    emotions = ['happy', 'sad', 'angry', 'anxious', 'neutral']
-    return random.choice(emotions)
+    scores = sia.polarity_scores(user_message)
+    compound = scores["compound"]
+    if compound >= 0.5:
+        return "happy"
+    elif compound <= -0.5:
+        return "sad"
+    elif "anxious" in user_message.lower():
+        return "anxious"
+    elif "angry" in user_message.lower():
+        return "angry"
+    else:
+        return "neutral"
 
-# Simple chatbot response
 def chatbot_response(user_message):
     responses = [
         "I understand how you feel.",
@@ -18,7 +29,7 @@ def chatbot_response(user_message):
         "You are stronger than you think.",
         "I'm here to listen."
     ]
-    return random.choice(responses)
+    return responses[len(user_message) % len(responses)]
 
 def chat_with_bot(username, user_message):
     emotion = detect_emotion(user_message)
@@ -28,7 +39,6 @@ def chat_with_bot(username, user_message):
 
     if emotion in ['sad', 'angry', 'anxious']:
         log_mood(username, emotion)
-
     if emotion == 'anxious':
         flag_crisis(username, "Detected signs of anxiety")
 
