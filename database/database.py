@@ -6,7 +6,7 @@ from datetime import datetime
 import os
 
 # MongoDB Atlas Connection
-MONGO_URI = "your_mongodb_connection_string"
+MONGO_URI = "mongodb+srv://rtxklaus1:9Oj0O6RmDeYZM5za@mental-wellness-chatbot.ta0sbvh.mongodb.net/"
 client = MongoClient(MONGO_URI)
 db = client["mental_wellness_db"]
 users_collection = db["users"]
