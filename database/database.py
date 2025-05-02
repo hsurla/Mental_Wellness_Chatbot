@@ -35,7 +35,7 @@ def log_chat(username, message, bot_response, emotion_detected):
                     "user_message": message,
                     "bot_response": bot_response,
                     "emotion_detected": emotion_detected,
-                    "timestamp": datetime.utcnow()
+                    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 }
             }
         }
@@ -49,7 +49,7 @@ def log_mood(username, mood):
             "$push": {
                 "mood_history": {
                     "mood": mood,
-                    "timestamp": datetime.utcnow()
+                    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 }
             }
         }
@@ -63,8 +63,17 @@ def flag_crisis(username, reason):
             "$push": {
                 "crisis_flags": {
                     "reason": reason,
-                    "timestamp": datetime.utcnow()
+                    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 }
             }
         }
     )
+
+#get past chats
+def get_chat_history(username):
+    user = users_collection.find_one({"username": username})
+    if user and "chat_logs" in user:
+        return user["chat_logs"]
+    return []
+
+

@@ -4,6 +4,7 @@ from nltk.sentiment import SentimentIntensityAnalyzer
 from database.database import log_chat, log_mood, flag_crisis
 import nltk
 nltk.download('vader_lexicon')
+from datetime import datetime
 
 sia = SentimentIntensityAnalyzer()
 
@@ -34,6 +35,7 @@ def chatbot_response(user_message):
 def chat_with_bot(username, user_message):
     emotion = detect_emotion(user_message)
     response = chatbot_response(user_message)
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     log_chat(username, user_message, response, emotion)
 
@@ -42,4 +44,4 @@ def chat_with_bot(username, user_message):
     if emotion == 'anxious':
         flag_crisis(username, "Detected signs of anxiety")
 
-    return response, emotion
+    return response, emotion, timestamp
