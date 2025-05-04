@@ -47,19 +47,26 @@ def main():
             # Spacer
             st.markdown("----")
 
+            #Clear the input before rendering the widget
+            if st.session_state.get("clear_input", False):
+                st.session_state["chat_input"] = ""
+                st.session_state["clear_input"] = False
+
             # Input field and button (bottom)
             input_col1, input_col2 = st.columns([5, 1])
             with input_col1:
                 user_message = st.text_input("Type your message:", key="chat_input", label_visibility="collapsed")
             with input_col2:
                 if st.button("Send"):
-                    if st.session_state["chat_input"].strip():
+                    if user_message.strip():
                         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                        user_message = st.session_state["chat_input"]
 
                         st.session_state.chat_history.append(("You", user_message, current_time))
                         response, emotion, current_time = chat_with_bot(st.session_state['username'], user_message)
                         st.session_state.chat_history.append(("Bot", f"{response} *(Mood: {emotion})*", current_time))
+
+                        #flag to clear input next run
+                        st.session_state["clear_input"] = True
                         st.rerun()
         elif page == "Chat History":
             st.title("🕒 Your Chat History")
