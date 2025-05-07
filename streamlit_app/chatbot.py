@@ -3,41 +3,188 @@
 from nltk.sentiment import SentimentIntensityAnalyzer
 from database.database import log_chat, log_mood, flag_crisis
 import nltk
+nltk.download('punkt_tab')
 nltk.download('vader_lexicon')
 from datetime import datetime
+import text2emotion as te
+import random
 
 sia = SentimentIntensityAnalyzer()
 
 def detect_emotion(user_message):
-    scores = sia.polarity_scores(user_message)
-    compound = scores["compound"]
-    if compound >= 0.5:
-        return "happy"
-    elif compound <= -0.5:
-        return "sad"
-    elif "anxious" in user_message.lower():
-        return "anxious"
-    elif "angry" in user_message.lower():
-        return "angry"
-    else:
+    #detects emotion from the user's message.
+    emotion_scores = te.get_emotion(user_message)
+
+    if not emotion_scores or all(score == 0 for score in emotion_scores.values()):
         return "neutral"
 
-def chatbot_response(user_message):
-    responses = [
-        "I understand how you feel.",
-        "It's okay to feel that way.",
-        "Remember to take deep breaths.",
-        "You are stronger than you think.",
-        "I'm here to listen."
+    #Get emotion with highest score
+    raw_emotion = max(emotion_scores, key=emotion_scores.get).lower()
+
+    emotion_map = {
+        "happy": "happy",
+        "sad": "sad",
+        "angry": "angry",
+        "fear": "anxious",
+        "surprise": "neutral"
+    }
+
+    return emotion_map.get(raw_emotion, "neutral")
+
+#intent detection (simple rule-based)
+def detect_intent(user_message):
+    msg = user_message.lower()
+    if any(word in msg for word in ["help", "advice", "suggest", "what should", "how can", "recommend", "guide", "tips"]):
+        return "seeking advice"
+
+    elif any(word in msg for word in ["angry", "annoyed", "frustrated", "hate", "rage", "furious", "pissed"]):
+        return "venting"
+
+    elif any(word in msg for word in ["thank you", "thanks", "grateful", "appreciate", "gratitude"]):
+        return "gratitude"
+
+    elif any(word in msg for word in ["happy", "excited", "joy", "amazing", "feeling great", "positive"]):
+        return "sharing joy"
+
+    elif any(word in msg for word in ["hi", "hello", "hey", "yo", "greetings"]):
+        return "greeting"
+
+    elif any(word in msg for word in ["alone", "tired", "done", "exhausted", "no one", "overwhelmed", "can't take"]):
+        return "venting"
+
+    # Fallback
+    return "casual"
+
+#response map (emotion + intent -> list of responses)
+response_map = {
+    ("sad", "venting"): [
+        "I'm here for you. Want to talk more about it?",
+        "It's okay to feel this way. Let's work through it together.",
+        "That must be really hard. I'm listening whenever you're ready.",
+        "You don't have to go through this alone. I'm here with you.",
+        "It's totally valid to feel low sometimes. Let's talk it out."
+    ],
+    ("sad", "seeking advice"): [
+        "I'm here to help. Would it help to explore some coping strategies?",
+        "You've taken the first step by talking about it. Let's find a way forward.",
+        "Can I share some self-care techniques that might help?",
+        "Let's take it one step at a time — I've got you."
+    ],
+    ("anxious", "venting"):[
+        "Anxiety can be overwhelming. Want to share what's on your mind?",
+        "Would it help if we slowed down and talked through it?",
+        "I'm here — no pressure. You can tell me everything or nothing.",
+        "That sounds tough. I'm proud of you for opening up.",
+        "We can handle it together. Start from wherever you feel comfortable."
+    ],
+    ("anxious", "seeking advice"): [
+        "Would you like to try a calming exercise together?",
+        "Let's take a few deep breaths. I can guide you if you'd like.",
+        "Do grounding techniques sound helpful right now?",
+        "Let's focus on one small thing at a time — that often helps."
+    ],
+    ("happy", "gratitude"): [
+        "That's wonderful to hear! I'm glad you're feeling good. 😊",
+        "You deserve every bit of joy you're feeling today!",
+        "I'm happy to hear that — let's keep that energy going!",
+        "That made my day too. 💛"
+    ],
+    ("angry", "venting"): [
+        "It's okay to feel angry. I'm here to listen without judgment.",
+        "Want to talk about what triggered your anger?",
+        "Anger is a valid emotion — we can unpack it together.",
+        "You're allowed to feel this way. I'm with you.",
+        "Would it help to express your thoughts openly? I'm all ears.",
+        "Let it out - I'm here for you."
+    ],
+    ("happy", "sharing joy"):[
+        "Tell me more — I love hearing about good moments!",
+        "Let's celebrate that win together! 🎉",
+        "I'm smiling with you! What made it special?",
+        "That sounds amazing! Keep the good vibes coming."
+    ],
+    ("neutral", "casual"): [
+        "Tell me more about how you're feeling today.",
+        "I'm here for anything you'd like to share.",
+        "Whether it's big or small, I'm listening.",
+        "How has your day been so far?",
+        "I'm ready to talk about whatever's on your mind."
+    ],
+    ("neutral", "greeting"): [
+        "Hi there 👋 How are you feeling today?",
+        "Hey! I'm here if you want to chat.",
+        "Hello! What would you like to talk about today?",
+        "Welcome! Feel free to share whatever's on your mind."
+    ],
+    ("sad", "gratitude"): [
+        "Thank you for trusting me — I'm here whenever you need.",
+        "I'm really glad to be here with you.",
+        "That means a lot. Let's keep going together."
+    ],
+    ("anxious", "gratitude"): [
+        "I'm proud of you for expressing gratitude despite the anxiety.",
+        "That says a lot about your strength. I'm here for you.",
+        "It's inspiring to see you hold onto hope — keep going!"
     ]
-    return responses[len(user_message) % len(responses)]
+}
+
+default_response_map = {
+    "sad": [
+        "I'm here for you. Take your time. 🧘",
+        "You're not alone. I'm with you whenever you're ready to talk.",
+        "It's completely okay to feel down sometimes.",
+        "Talking can help. I'm here if you feel like sharing.",
+        "You're doing better than you think. One step at a time. 💙"
+    ],
+    "anxious": [
+        "Let's breathe together. You're doing okay. 🧘",
+        "You're safe here. Let's take it one moment at a time.",
+        "Would grounding techniques help? I can guide you through one.",
+        "Whatever you're feeling is valid — let's sit with it for a moment.",
+        "You've already taken the first step by opening up. That matters."
+    ],
+    "angry": [
+        "It's okay to feel this way. Want to talk about it calmly?",
+        "Let it out — I'm here without judgment.",
+        "We all have tough moments. You're allowed to feel this.",
+        "You deserve space to process. I'm here for you.",
+        "Would expressing what made you feel this way help?"
+    ],
+    "happy": [
+        "That's wonderful! 😊 What made your day better?",
+        "I'm so glad to hear that! Want to tell me more?",
+        "Hearing that brings me joy too. ✨",
+        "Love the positivity! Let's keep that going!",
+        "You're glowing today — keep it up! 💛"
+    ],
+    "neutral": [
+        "How are you feeling right now? I'm here for anything. 🤝",
+        "I'm listening. Tell me whatever's on your mind.",
+        "Just checking in — how's your day going?",
+        "I'm here to chat about anything, big or small.",
+        "Want to talk or just sit together in silence? Either is okay."
+    ]
+}
+
 
 def chat_with_bot(username, user_message):
     emotion = detect_emotion(user_message)
-    response = chatbot_response(user_message)
+    intent = detect_intent(user_message)
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    log_chat(username, user_message, response, emotion)
+    # Try to get a response from the full (emotion, intent) pair
+    responses = response_map.get((emotion, intent))
+
+    if not responses:
+        responses = default_response_map.get(emotion,[
+            "I'm here to listen. Take your time.",
+            "Feel free to share anything you'd like. 🤝"
+        ])
+
+    response = random.choice(responses)  # pick one randomly for natural variety
+
+    #log the chat
+    log_chat(username, user_message, response, emotion, intent)
 
     if emotion in ['sad', 'angry', 'anxious']:
         log_mood(username, emotion)

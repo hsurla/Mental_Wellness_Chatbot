@@ -26,7 +26,7 @@ def find_user(username):
     return users_collection.find_one({"username": username})
 
 # Add chat message to user's history
-def log_chat(username, message, bot_response, emotion_detected):
+def log_chat(username, message, bot_response, emotion_detected, intent_detected):
     users_collection.update_one(
         {"username": username},
         {
@@ -35,6 +35,7 @@ def log_chat(username, message, bot_response, emotion_detected):
                     "user_message": message,
                     "bot_response": bot_response,
                     "emotion_detected": emotion_detected,
+                    "intent_detected": intent_detected,
                     "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 }
             }
