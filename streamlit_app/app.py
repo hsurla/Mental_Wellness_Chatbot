@@ -7,6 +7,7 @@ from streamlit_app.register import registration_page
 from streamlit_app.chatbot import chat_with_bot
 from streamlit_app.sidebar import sidebar
 from database.database import get_chat_history
+from streamlit_app.wellness import wellness_page
 
 def main():
     st.set_page_config(page_title="Mental Wellness Chatbot", layout="centered")
@@ -68,6 +69,8 @@ def main():
                         #flag to clear input next run
                         st.session_state["clear_input"] = True
                         st.rerun()
+        elif page == "Wellness":
+            wellness_page()                
         elif page == "Chat History":
             st.title("🕒 Your Chat History")
 
@@ -95,6 +98,8 @@ def main():
         elif page == "Logout":
             st.session_state['logged_in'] = False
             st.success("You have been logged out!")
+
+        
 
 if __name__ == "__main__":
     main()
