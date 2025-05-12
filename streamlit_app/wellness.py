@@ -1,5 +1,3 @@
-# streamlit_app/wellness.py
-
 import streamlit as st
 import time
 import random
@@ -22,14 +20,45 @@ def breathing_exercise():
 
 def meditation_suggestions():
     st.subheader("🧘‍♂️ Meditation Suggestions")
-    meditations = [
-        "Focus on your breath for 2 minutes.",
-        "Try a body scan meditation.",
-        "Listen to calming nature sounds for 5 minutes.",
-        "Repeat a simple mantra like 'I am calm and safe.'",
-        "Try mindful observation — pick an object and study it silently."
-    ]
-    st.write(random.choice(meditations))
+
+    categories = {
+        "Breathing": [
+            "Focus on your breath for 2 minutes.",
+            "Inhale for 4 seconds, hold for 4, exhale for 4.",
+            "Count 10 breaths slowly, restarting if you lose focus."
+        ],
+        "Visualization": [
+            "Visualize a peaceful place — forest, beach, or mountain.",
+            "Picture a calming light filling your body with warmth."
+        ],
+        "Mantra": [
+            "Repeat a phrase like 'I am calm' for 3 minutes.",
+            "Silently say 'Inhale calm, exhale tension' with each breath."
+        ],
+        "Body Scan": [
+            "Mentally scan your body from toes to head, releasing tension.",
+            "Focus on how each part of your body feels without judgment."
+        ]
+    }
+
+    category = st.selectbox("Choose a meditation style", list(categories.keys()))
+
+    suggestion = random.choice(categories[category])
+    st.write(f"🧘 Try this: *{suggestion}*")
+
+    if st.button("🔁 Need Another Suggestion?"):
+        st.rerun()
+
+    st.markdown("---")
+    st.markdown("🕒 **Want to set a 1-minute mindfulness timer?**")
+
+    if st.button("Start 1-Minute Timer"):
+        countdown = st.empty()
+        for i in range(60, 0, -1):
+            countdown.markdown(f"⏳ Time left: **{i}** seconds")
+            time.sleep(1)
+        countdown.markdown("✅ Time's up! Hope you're feeling a bit more relaxed.")
+
 
 def journaling_prompt():
     st.subheader("📓 Journaling Prompt")
