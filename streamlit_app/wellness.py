@@ -60,13 +60,41 @@ def meditation_suggestions():
         countdown.markdown("✅ Time's up! Hope you're feeling a bit more relaxed.")
  
 def daily_tip():
-    st.subheader("🌟 Daily Wellness Tip")
-    try:
-        # Replace with actual API if available
-        tip = requests.get("https://zenquotes.io/api/random").json()[0]['q']
-        st.info(tip)
-    except:
-        st.info("Take a few deep breaths and remind yourself that you're doing your best. 💙")
+    st.subheader("🌟 Daily Wellness Tips")
+
+    tips = []
+
+    # Try to get multiple tips from API
+    for _ in range(3):
+        try:
+            response = requests.get("https://www.affirmations.dev/")
+            data = response.json()
+            tip = data.get("affirmation")
+            if tip and tip not in tips:
+                tips.append(tip)
+        except:
+            break  # If API fails, switch to offline tips
+
+    # If API failed or not enough unique tips, use offline fallback
+    if len(tips) < 3:
+        offline_tips = [
+            "Take a deep breath — you're doing your best.",
+            "Let yourself rest without guilt.",
+            "Drink a glass of water and stretch.",
+            "Focus on what you can control — and let the rest go.",
+            "You deserve kindness — especially from yourself.",
+            "Small steps forward are still progress.",
+            "It’s okay to pause. You don’t have to rush.",
+            "Celebrate small wins today."
+        ]
+        # Fill the remaining tips
+        needed = 3 - len(tips)
+        tips.extend(random.sample(offline_tips, needed))
+
+    # Display the tips
+    for i, tip in enumerate(tips, 1):
+        st.success(f"{i}. {tip}")
+
 
 def wellness_page():
     st.title("🌿 Wellness Corner")
