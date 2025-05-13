@@ -167,6 +167,197 @@ default_response_map = {
     ]
 }
 
+tone_response_map = {
+    "calm": {
+        "sad": [
+            "I'm here with you. Let's take a deep breath together. 🧘",
+            "Feel free to share, I'm here to listen with calm and care.",
+            "You're safe. Let's work through this slowly.",
+            "You're not alone. Let's gently navigate this together.",
+            "It's okay to feel sad — you're doing your best.",
+            "We don't have to rush. I'm here whenever you're ready.",
+            "Even gentle steps forward matter. You're doing fine.",
+            "Take all the time you need. I'm not going anywhere.",
+            "Sometimes sitting with feelings is the bravest thing to do.",
+            "This is a soft space to just be — no expectations."
+        ],
+        "anxious": [
+            "Breathe deeply. You're doing okay. 🧘",
+            "Let's pause for a moment together.",
+            "We can take things one step at a time.",
+            "Just rest here with me for a moment.",
+            "Let's allow ourselves a slow, calm reset. 🧘",
+            "It's okay to feel overwhelmed — you're still grounded.",
+            "Let's take three slow breaths together. In... and out.",
+            "You are safe here, just as you are.",
+            "This too shall pass — let's wait it out gently.",
+            "I'm here, offering calm when things feel stormy."
+        ],
+        "angry": [
+            "Anger is okay. Let's explore it calmly.",
+            "I'm right here with you, no pressure. 🧘",
+            "Let's channel that energy into understanding.",
+            "Take your time to express it. I'm listening.",
+            "Let's breathe through this storm together.",
+            "Anger means something matters deeply to you.",
+            "We can unpack this together, slowly.",
+            "Your feelings are welcome here — all of them.",
+            "Even anger has a story. Let's listen to it.",
+            "Let's settle the waves, one breath at a time."
+        ],
+        "happy": [
+            "That's peaceful to hear. Stay centered and joyful.",
+            "So nice to hear positivity. 🧘",
+            "Keep your calm joy flowing today!",
+            "That's a gentle ray of sunshine — thank you.",
+            "Glad you're feeling good inside. 😊",
+            "Cherish this moment — it's beautiful.",
+            "Your light is warming — thank you for sharing it.",
+            "I'm smiling with you in this calm joy.",
+            "Hold onto that peace — it suits you.",
+            "Let's preserve this good energy together."
+        ],
+        "neutral": [
+            "I'm here with a calm space for you. 🧘",
+            "Let's take today slow. How are you feeling?",
+            "You can always share what's on your mind.",
+            "Whatever you're feeling — it's welcome here.",
+            "We don't need to rush. I'm here with you.",
+            "Want to sit in silence or chat gently?",
+            "Just being here is enough sometimes.",
+            "Let's ease into the day together.",
+            "You don't need a reason to speak. Just say hi.",
+            "I'm here as a calm companion whenever you need."
+        ]
+    },
+
+    "motivational": {
+        "sad": [
+            "You're stronger than you think — keep going 💪",
+            "Every day is a new chance to grow.",
+            "I'm here cheering you on — you're not alone.",
+            "Even storms pass — you've got this.",
+            "You're making progress, even when it's hard.",
+            "This moment doesn't define you — your resilience does.",
+            "You've come so far already — don't stop now!",
+            "Let's rise together — one small victory at a time.",
+            "Feel it, face it, and keep moving forward. 💪",
+            "You're more powerful than this tough moment."
+        ],
+        "anxious": [
+            "You've got this — take a breath and push forward!",
+            "Even small steps matter. Let's take one together. 💪",
+            "Courage isn't the absence of fear, it's moving through it.",
+            "We rise through the challenges — one breath at a time.",
+            "Let's turn this worry into momentum. You're capable.",
+            "You're doing better than you think — keep breathing.",
+            "Focus on what you *can* control — that's your power.",
+            "This feeling is temporary — your strength isn't.",
+            "You've faced worse — and you came through.",
+            "Let's own this moment with confidence. 💪"
+        ],
+        "angry": [
+            "Let's turn that fire into power! 💪",
+            "Speak your truth — it's valid and important.",
+            "Let it out, and let's rebuild stronger.",
+            "That energy can fuel your next move.",
+            "Anger means you care — and that matters.",
+            "Use it to spark change. You can do that.",
+            "This is your chance to grow beyond it.",
+            "Power comes when we harness emotion wisely.",
+            "I believe in your ability to overcome this.",
+            "Even strong emotions can push us to level up."
+        ],
+        "happy": [
+            "That's the energy we love! Keep it up! 💪",
+            "You're absolutely glowing today — keep going!",
+            "Success starts with this kind of mindset!",
+            "Let's ride that wave — amazing energy!",
+            "You're unstoppable today — love to see it!",
+            "You're setting the tone — and it's powerful!",
+            "Keep stacking those wins — one by one!",
+            "Momentum is on your side — let's build it!",
+            "Your joy is like rocket fuel — let's go!",
+            "You're radiating strength and joy today!"
+        ],
+        "neutral": [
+            "Let's find what fires you up today 💪",
+            "Every moment is a chance to grow.",
+            "What's one thing we can tackle today?",
+            "Even ordinary days hold great potential.",
+            "Let's make today count together!",
+            "Stay open — today might surprise you.",
+            "Let's set a small goal. Ready?",
+            "You've got more in you than you know.",
+            "Neutral is a launchpad — let's go higher.",
+            "Let's create momentum from this moment!"
+        ]
+    },
+
+    "friendly": {
+        "sad": [
+            "Hey, I've got your back 💛",
+            "Rough days happen, but I'm always here.",
+            "Wanna talk it out like pals?",
+            "It's okay, buddy — I'm listening.",
+            "You can vent here anytime, friend.",
+            "Let's get through this together, like friends do.",
+            "I'm just a chat away — always.",
+            "No shame in sad days — we all have them.",
+            "You're doing better than you think.",
+            "We got this. One step at a time, friend."
+        ],
+        "anxious": [
+            "Deep breaths, buddy. You're not alone. 🤝",
+            "We're in this together. Let's chill and chat.",
+            "Just you and me, let's talk it out!",
+            "You've got a friend in me — always.",
+            "I'm here, like a true friend would be.",
+            "Let's sit through the worry — I've got snacks!",
+            "Want to laugh a little to ease the tension?",
+            "Nothing too big for us to handle together!",
+            "I'm right here, pal. Keep breathing.",
+            "One message at a time — we'll figure this out."
+        ],
+        "angry": [
+            "Let it all out, friend. No judgment. 🤝",
+            "We all have our days — I'm here to hear you.",
+            "Hit me with it — I'm listening like a friend.",
+            "I've got your back, even on the hard days.",
+            "Say what you need — I'll still be here.",
+            "Vent away! I won't take it personally.",
+            "Friend to friend — let's cool off together.",
+            "I'm still on your team, no matter what.",
+            "You don't need to hold back here.",
+            "Let's talk it out — or yell it out. Your call!"
+        ],
+        "happy": [
+            "Woohoo! Love hearing that! 🤗",
+            "That's awesome, buddy! High five! ✋",
+            "Good vibes only — tell me more!",
+            "You made my day too!",
+            "Your joy is contagious 😄",
+            "That's the spirit, my friend!",
+            "Let's keep this good mood rolling!",
+            "Tell me more — I love your energy!",
+            "You're shining bright today! 🌟",
+            "This calls for a virtual celebration!"
+        ],
+        "neutral": [
+            "Hey there! What's up? 🤝",
+            "Feel like chatting today?",
+            "Let's catch up on how you're feeling.",
+            "I'm here, friend — anytime you wanna talk.",
+            "Want to share something from your day?",
+            "Nothing's too boring to talk about here!",
+            "Let's see where the chat takes us!",
+            "We don't need a reason to hang out!",
+            "You can say anything — no judgment zone.",
+            "I'm all ears — what's on your mind?"
+        ]
+    }
+}
+
 def chitchat_response(user_message):
     msg = user_message.lower().strip()
 
@@ -207,12 +398,17 @@ def chat_with_bot(username, user_message):
     #step 1: check for casual/chitchat message
     chitchat = chitchat_response(user_message)
     if chitchat:
-        # Flag if it's a crisis message
+        emotion = detect_emotion(user_message)
+
         if any(keyword in user_message.lower() for keyword in ["hurt myself", "want to die", "kill myself", "end my life"]):
             flag_crisis(username, "Detected self-harm or suicidal message")
+        
+        log_chat(username, user_message, chitchat, emotion_detected=emotion, intent_detected="chitchat")
 
-        # Log as chitchat with default neutral emotion/intent
-        log_chat(username, user_message, chitchat, emotion_detected="neutral", intent_detected="chitchat")
+        if emotion in ['sad', 'angry', 'anxious']:
+            log_mood(username, emotion)
+        if emotion == 'anxious':
+            flag_crisis(username, "Detected signs of anxiety")
         return chitchat, "neutral", timestamp
 
     #step 2: proceed with emotion + intent logic
@@ -224,10 +420,13 @@ def chat_with_bot(username, user_message):
     responses = response_map.get((emotion, intent))
 
     if not responses:
-        responses = default_response_map.get(emotion,[
+        # Get tone (defaults to "calm" if not set)
+        tone = st.session_state.get("tone", "calm").lower()
+        tone_fallbacks = tone_response_map.get(tone, default_response_map)
+        responses = tone_fallbacks.get(emotion, default_response_map.get(emotion, [
             "I'm here to listen. Take your time.",
             "Feel free to share anything you'd like. 🤝"
-        ])
+        ]))
 
     response = random.choice(responses)  # pick one randomly for natural variety
 
