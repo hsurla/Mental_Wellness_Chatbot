@@ -60,19 +60,19 @@ def meditation_suggestions():
         countdown.markdown("✅ Time's up! Hope you're feeling a bit more relaxed.")
 
 
-def journaling_prompt():
-    st.subheader("📓 Journaling Prompt")
-    prompts = [
-        "What are three things you're grateful for today?",
-        "Describe a recent moment that made you smile.",
-        "What’s been weighing on your mind lately?",
-        "Write a letter to your future self.",
-        "Describe a safe space — real or imagined."
+#def journaling_prompt():
+    #st.subheader("📓 Journaling Prompt")
+    #prompts = [
+       # "What are three things you're grateful for today?",
+        #"Describe a recent moment that made you smile.",
+        #"What’s been weighing on your mind lately?",
+       # "Write a letter to your future self.",
+      #  "Describe a safe space — real or imagined."
     ]
-    st.write(random.choice(prompts))
-    response = st.text_area("Write your thoughts here:")
-    if st.button("Save Entry"):
-        st.success("Entry saved! (Note: You can enhance this by saving to MongoDB later.)")
+    #st.write(random.choice(prompts))
+    #response = st.text_area("Write your thoughts here:")
+    #if st.button("Save Entry"):
+     #   st.success("Entry saved! (Note: You can enhance this by saving to MongoDB later.)")
 
 def daily_tip():
     st.subheader("🌟 Daily Wellness Tip")
