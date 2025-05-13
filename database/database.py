@@ -4,6 +4,7 @@ import pymongo
 from pymongo import MongoClient
 from datetime import datetime
 import os
+from bson.objectid import ObjectId
 
 # MongoDB Atlas Connection
 MONGO_URI = "mongodb+srv://rtxklaus1:9Oj0O6RmDeYZM5za@mental-wellness-chatbot.ta0sbvh.mongodb.net/"
@@ -78,3 +79,63 @@ def get_chat_history(username):
     return []
 
 
+def save_journal_entry(username, text):
+    users_collection.update_one(
+        {"username": username},
+        {
+            "$push": {
+                "journal_entries": {
+                    "_id": ObjectId(),
+                    "text": text,
+                    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                }
+            }
+        }
+    )
+
+def get_journal_entries(username):
+    user = users_collection.find_one({"username": username})
+    if user and "journal_entries" in user:
+        return user["journal_entries"]
+    return []
+
+def update_journal_entry(username, entry_id, new_text):
+    users_collection.update_one(
+        {"username": username, "journal_entries._id": ObjectId(entry_id)},
+        {
+            "$set": {
+                "journal_entries.$.text": new_text
+            }
+        }
+    )
+
+def delete_journal_entry(username, entry_id):
+    users_collection.update_one(
+        {"username": username},
+        {
+            "$pull": {
+                "journal_entries": {"_id": ObjectId(entry_id)}
+            }
+        }
+    )
+
+
+def get_latest_mood(username):
+    user = users_collection.find_one({"username": username})
+    if user and "mood_history" in user and user["mood_history"]:
+        return user["mood_history"][-1]["mood"], user["mood_history"][-1]["timestamp"]
+    return "No mood data", None
+
+def get_total_chat_count(username):
+    user = users_collection.find_one({"username": username})
+    return len(user.get("chat_logs", [])) if user else 0
+
+def get_total_journal_count(username):
+    user = users_collection.find_one({"username": username})
+    return len(user.get("journal_entries", [])) if user else 0
+
+def get_mood_history(username):
+    user = users_collection.find_one({"username": username})
+    if user and "mood_history" in user:
+        return user["mood_history"]
+    return []

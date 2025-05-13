@@ -1,8 +1,9 @@
 # streamlit_app/chatbot.py
 
-from nltk.sentiment import SentimentIntensityAnalyzer
+
 from database.database import log_chat, log_mood, flag_crisis
 import nltk
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
 nltk.download('punkt_tab')
 nltk.download('vader_lexicon')
 from datetime import datetime
@@ -166,11 +167,58 @@ default_response_map = {
     ]
 }
 
+def chitchat_response(user_message):
+    msg = user_message.lower().strip()
+
+    chitchat_map = {
+        # Casual / Greeting
+        "hi": "Hi there! 😊",
+        "hello": "Hello! How can I support you today?",
+        "hey": "Hey! How are you feeling?",
+        "how are you": "I'm just a chatbot, but I'm here and happy to help you!",
+        "what are you doing": "I'm here to listen and chat with you. 🧘",
+        "who are you": "I'm your Mental Wellness Chatbot, always ready to listen.",
+        "are you real": "I'm virtual, but I'm really here for you. 🤝",
+        "what's your name": "You can call me your Wellbeing Buddy. 💬",
+        "thank you": "You're welcome! Always here for you. 💛",
+        "thanks": "Happy to help!",
+
+        # Flirty / Childish
+        "i like you": "I'm here to support you, not for romantic chats. 😊",
+        "i love you": "That's kind of you, but I'm just a helpful bot. 💬",
+        "will you marry me": "Haha, I'm flattered, but I'm just here to help. 🧘",
+        "you're cute": "Thank you, but let's focus on how you're feeling today. 🤝",
+        "where do you live": "I'm a virtual assistant — I live in your browser!",
+        "you are stupid": "I'm here to help, not to be perfect. Let's refocus. 🧘",
+        "i hate you": "That's okay — I'm still here to support you.",
+
+        # Serious / Crisis
+        "i'm going to hurt myself": "I'm really concerned. Please talk to someone you trust. You're not alone. 💛",
+        "i want to die": "You're not alone. Please consider reaching out to a helpline. You matter. 🙏",
+        "nobody cares about me": "I care. You're important, and I'm here for you. 💙"
+    }
+
+    return chitchat_map.get(msg)
+
 
 def chat_with_bot(username, user_message):
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    #step 1: check for casual/chitchat message
+    chitchat = chitchat_response(user_message)
+    if chitchat:
+        # Flag if it's a crisis message
+        if any(keyword in user_message.lower() for keyword in ["hurt myself", "want to die", "kill myself", "end my life"]):
+            flag_crisis(username, "Detected self-harm or suicidal message")
+
+        # Log as chitchat with default neutral emotion/intent
+        log_chat(username, user_message, chitchat, emotion_detected="neutral", intent_detected="chitchat")
+        return chitchat, "neutral", timestamp
+
+    #step 2: proceed with emotion + intent logic
     emotion = detect_emotion(user_message)
     intent = detect_intent(user_message)
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
 
     # Try to get a response from the full (emotion, intent) pair
     responses = response_map.get((emotion, intent))
