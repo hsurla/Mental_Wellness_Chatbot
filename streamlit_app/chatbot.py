@@ -9,6 +9,7 @@ nltk.download('vader_lexicon')
 from datetime import datetime
 import text2emotion as te
 import random
+import streamlit as st
 
 sia = SentimentIntensityAnalyzer()
 
