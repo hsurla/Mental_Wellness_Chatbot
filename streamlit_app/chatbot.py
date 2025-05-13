@@ -1,8 +1,9 @@
 # streamlit_app/chatbot.py
 
-from nltk.sentiment import SentimentIntensityAnalyzer
+
 from database.database import log_chat, log_mood, flag_crisis
 import nltk
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
 nltk.download('punkt_tab')
 nltk.download('vader_lexicon')
 from datetime import datetime

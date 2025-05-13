@@ -95,6 +95,53 @@ def main():
         elif page == "Profile":
             st.subheader("Profile Page (Coming Soon!)")
 
+        elif page == "Journal":
+            st.title("📔 Your Personal Journal")
+            from database.database import(
+                save_journal_entry,
+                get_journal_entries,
+                update_journal_entry,
+                delete_journal_entry
+            )
+
+            st.markdown("Write down anything you're feeling or thinking.")
+            journal_text = st.text_area("New Entry", placeholder="Start writing here...")
+
+            if st.button("Save Entry"):
+                if journal_text.strip():
+                    save_journal_entry(st.session_state["username"], journal_text.strip())
+                    st.success("Entry saved successfully!")
+                    st.rerun()
+                else:
+                    st.warning("Entry cannot be empty.")
+
+            # Display past entries
+            st.markdown("### 📚 Previous Entries")
+            entries = get_journal_entries(st.session_state["username"])
+
+            if not entries:
+                st.info("No journal entries yet.")
+            else:
+                for entry in reversed(entries):
+                    entry_id = str(entry.get("_id"))
+                    time = entry.get("timestamp", "")
+                    text = entry.get("text", "")
+
+                    with st.expander(f"🕒 {time}"):
+                        edited_text = st.text_area("Edit entry", value=text, key=entry_id)
+
+                        col1, col2 = st.columns([1, 1])
+                        with col1:
+                            if st.button("Update", key=f"update_{entry_id}"):
+                                update_journal_entry(st.session_state["username"], entry_id, edited_text)
+                                st.success("Entry updated.")
+                                st.rerun()
+                        with col2:
+                            if st.button("Delete", key=f"delete_{entry_id}"):
+                                delete_journal_entry(st.session_state["username"], entry_id)
+                                st.warning("Entry deleted.")
+                                st.rerun()
+
         elif page == "Logout":
             st.session_state['logged_in'] = False
             st.success("You have been logged out!")
