@@ -118,3 +118,24 @@ def delete_journal_entry(username, entry_id):
             }
         }
     )
+
+
+def get_latest_mood(username):
+    user = users_collection.find_one({"username": username})
+    if user and "mood_history" in user and user["mood_history"]:
+        return user["mood_history"][-1]["mood"], user["mood_history"][-1]["timestamp"]
+    return "No mood data", None
+
+def get_total_chat_count(username):
+    user = users_collection.find_one({"username": username})
+    return len(user.get("chat_logs", [])) if user else 0
+
+def get_total_journal_count(username):
+    user = users_collection.find_one({"username": username})
+    return len(user.get("journal_entries", [])) if user else 0
+
+def get_mood_history(username):
+    user = users_collection.find_one({"username": username})
+    if user and "mood_history" in user:
+        return user["mood_history"]
+    return []

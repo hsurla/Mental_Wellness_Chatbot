@@ -8,6 +8,7 @@ from streamlit_app.chatbot import chat_with_bot
 from streamlit_app.sidebar import sidebar
 from database.database import get_chat_history
 from streamlit_app.wellness import wellness_page
+from streamlit_app.profile import profile_page
 
 def main():
     st.set_page_config(page_title="Mental Wellness Chatbot", layout="centered")
@@ -93,7 +94,7 @@ def main():
                     st.markdown("---")
 
         elif page == "Profile":
-            st.subheader("Profile Page (Coming Soon!)")
+            profile_page(st.session_state["username"])
 
         elif page == "Journal":
             st.title("📔 Your Personal Journal")
