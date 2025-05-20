@@ -11,7 +11,7 @@ from streamlit_app.wellness import wellness_page
 from streamlit_app.profile import profile_page
 
 def main():
-    st.set_page_config(page_title="Mental Wellness Chatbot", layout="centered")
+    st.set_page_config(page_title="Mental Wellness Chatbot", layout="wide")
 
     if 'logged_in' not in st.session_state:
         st.session_state['logged_in'] = False
@@ -26,7 +26,7 @@ def main():
         page = sidebar()
 
         if page == "Chatbot":
-            st.title("💬 Your Mental Wellness Chatbot")
+            st.markdown("## 💬 Your Mental Wellness Chatbot")
 
             if "chat_history" not in st.session_state:
                 st.session_state.chat_history = []
@@ -47,7 +47,7 @@ def main():
                         st.markdown(f"**🤖 Bot:** {msg}  \n<sub>{time}</sub>", unsafe_allow_html=True)
 
             # Spacer
-            st.markdown("----")
+            st.markdown("<br>", unsafe_allow_html=True)
 
             #Clear the input before rendering the widget
             if st.session_state.get("clear_input", False):
@@ -55,12 +55,13 @@ def main():
                 st.session_state["clear_input"] = False
 
             # Input field and button (bottom)
-            input_col1, input_col2 = st.columns([5, 1])
-            with input_col1:
-                user_message = st.text_input("Type your message:", key="chat_input", label_visibility="collapsed")
-            with input_col2:
-                if st.button("Send"):
-                    if user_message.strip():
+            with st.container():
+                st.markdown("### 👇 Type your message")
+                user_message = st.text_input("Type here", key="chat_input", label_visibility="collapsed")
+
+                send = st.button("📤 Send Message", use_container_width=True)
+
+                if send and user_message.strip():
                         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
                         st.session_state.chat_history.append(("You", user_message, current_time))
