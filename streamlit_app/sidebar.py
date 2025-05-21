@@ -18,6 +18,11 @@ def sidebar():
             )
         )
 
+        with st.sidebar:
+            st.markdown("### 🖌️ Theme")
+            st.caption("🎨 To switch between Light and Dark mode, use ⚙️ Settings in the top-right.")
+
+
         # Store clean tone string in session_state for use in chatbot
         tone_mapping = {
             "Calm 🧘": "calm",
