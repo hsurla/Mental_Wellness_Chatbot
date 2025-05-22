@@ -58,13 +58,19 @@ def meditation_suggestions():
             countdown.markdown(f"⏳ Time left: **{i}** seconds")
             time.sleep(1)
         countdown.markdown("✅ Time's up! Hope you're feeling a bit more relaxed.")
- 
+
 def daily_tip():
     st.subheader("🌟 Daily Wellness Tips")
 
+    # Create a two-column layout: [spacer, button]
+    col1, col2 = st.columns([6, 1])
+    with col2:
+        if st.button("🔁"):
+            st.rerun()
+
     tips = []
 
-    # Try to get multiple tips from API
+    # Try to get tips from the API
     for _ in range(3):
         try:
             response = requests.get("https://www.affirmations.dev/")
@@ -73,9 +79,9 @@ def daily_tip():
             if tip and tip not in tips:
                 tips.append(tip)
         except:
-            break  # If API fails, switch to offline tips
+            break
 
-    # If API failed or not enough unique tips, use offline fallback
+    # Use fallback tips if needed
     if len(tips) < 3:
         offline_tips = [
             "Take a deep breath — you're doing your best.",
@@ -87,14 +93,11 @@ def daily_tip():
             "It’s okay to pause. You don’t have to rush.",
             "Celebrate small wins today."
         ]
-        # Fill the remaining tips
-        needed = 3 - len(tips)
-        tips.extend(random.sample(offline_tips, needed))
+        tips.extend(random.sample(offline_tips, 3 - len(tips)))
 
     # Display the tips
     for i, tip in enumerate(tips, 1):
         st.success(f"{i}. {tip}")
-
 
 def wellness_page():
     st.title("🌿 Wellness Corner")
