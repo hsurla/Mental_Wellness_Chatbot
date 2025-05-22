@@ -102,7 +102,7 @@ def daily_tip():
 def wellness_page():
     st.title("🌿 Wellness Corner")
     activity = st.selectbox("Choose a Wellness Activity", [
-        "Breathing Exercise", "Meditation", "Journaling", "Daily Tip"
+        "Breathing Exercise", "Meditation", "Daily Tip"
     ])
 
     if activity == "Breathing Exercise":
