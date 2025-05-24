@@ -1,44 +1,42 @@
-# streamlit_app/app.py
-
-import pyrebase
 import streamlit as st
+import pyrebase
 from datetime import datetime
-from streamlit_app.login import login_page
-from streamlit_app.register import registration_page
+from streamlit_app.login import login_page as legacy_login_page  # legacy, not used
+from streamlit_app.register import registration_page as legacy_registration_page  # legacy, not used
 from streamlit_app.chatbot import chat_with_bot
 from streamlit_app.sidebar import sidebar
-from database.database import get_chat_history
 from streamlit_app.wellness import wellness_page
 from streamlit_app.profile import profile_page
+from database.database import (
+    get_chat_history,
+    save_journal_entry,
+    get_journal_entries,
+    update_journal_entry,
+    delete_journal_entry
+)
 from streamlit_app.firebase_config import firebaseConfig
 
 firebase = pyrebase.initialize_app(firebaseConfig)
 auth = firebase.auth()
 
 def google_auth_page():
-    st.title("🔐 Login / Register with Firebase")
-
-    choice = st.radio("Choose Option:", ["Login", "Register"])
+    st.title("🔐 Login with Firebase")
 
     email = st.text_input("Email")
     password = st.text_input("Password", type="password")
 
-    if choice == "Register":
-        if st.button("Create Account"):
-            try:
-                user = auth.create_user_with_email_and_password(email, password)
-                st.success("Account created successfully!")
-            except Exception as e:
-                st.error(f"Error: {e}")
-    else:
-        if st.button("Login"):
-            try:
-                user = auth.sign_in_with_email_and_password(email, password)
-                st.success("Logged in successfully!")
-                st.session_state['logged_in'] = True
-                st.session_state['username'] = email
-            except Exception as e:
-                st.error(f"Login failed: {e}")
+    if st.button("Login", use_container_width=True):
+        try:
+            user = auth.sign_in_with_email_and_password(email, password)
+            st.success("Login successful!")
+            st.session_state['logged_in'] = True
+            st.session_state['username'] = email
+            st.rerun()
+        except Exception as e:
+            st.error(f"Login failed: {e}")
+
+    st.markdown("---")
+    st.caption("Don't have an account? Please register on Firebase or use an admin tool to create users.")
 
 def main():
     st.set_page_config(page_title="Mental Wellness Chatbot", layout="wide")
@@ -47,11 +45,7 @@ def main():
         st.session_state['logged_in'] = False
 
     if not st.session_state['logged_in']:
-        choice = st.selectbox("Login / Register", ["Login", "Register"])
-        if choice == "Login":
-            login_page()
-        else:
-            registration_page()
+        google_auth_page()
     else:
         page = sidebar()
 
@@ -61,7 +55,6 @@ def main():
             if "chat_history" not in st.session_state:
                 st.session_state.chat_history = []
 
-            # Display chat history (top)
             chat_container = st.container()
             with chat_container:
                 for item in st.session_state.chat_history:
@@ -76,40 +69,33 @@ def main():
                     else:
                         st.markdown(f"**🤖 Bot:** {msg}  \n<sub>{time}</sub>", unsafe_allow_html=True)
 
-            # Spacer
             st.markdown("<br>", unsafe_allow_html=True)
 
-            #Clear the input before rendering the widget
             if st.session_state.get("clear_input", False):
                 st.session_state["chat_input"] = ""
                 st.session_state["clear_input"] = False
 
-            # Input field and button (bottom)
-            with st.container():
-                st.markdown("### 👇 Type your message")
-                user_message = st.text_input("Type here", key="chat_input", label_visibility="collapsed")
+            st.markdown("### 👇 Type your message")
+            user_message = st.text_input("Type here", key="chat_input", label_visibility="collapsed")
 
-                send = st.button("📤 Send Message", use_container_width=True)
+            if st.button("📤 Send Message", use_container_width=True):
+                if user_message.strip():
+                    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    st.session_state.chat_history.append(("You", user_message, current_time))
+                    response, emotion, current_time = chat_with_bot(st.session_state['username'], user_message)
+                    st.session_state.chat_history.append(("Bot", f"{response} *(Mood: {emotion})*", current_time))
+                    st.session_state["clear_input"] = True
+                    st.rerun()
 
-                if send and user_message.strip():
-                        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-                        st.session_state.chat_history.append(("You", user_message, current_time))
-                        response, emotion, current_time = chat_with_bot(st.session_state['username'], user_message)
-                        st.session_state.chat_history.append(("Bot", f"{response} *(Mood: {emotion})*", current_time))
-
-                        #flag to clear input next run
-                        st.session_state["clear_input"] = True
-                        st.rerun()
         elif page == "Wellness":
-            wellness_page()                
+            wellness_page()
+
         elif page == "Chat History":
             st.title("🕒 Your Chat History")
-
             chat_logs = get_chat_history(st.session_state['username'])
 
             if not chat_logs:
-                st.info("No chat history avaiable.")
+                st.info("No chat history available.")
             else:
                 for entry in chat_logs:
                     user_msg = entry.get("user_message", "")
@@ -129,13 +115,6 @@ def main():
 
         elif page == "Journal":
             st.title("📔 Your Personal Journal")
-            from database.database import(
-                save_journal_entry,
-                get_journal_entries,
-                update_journal_entry,
-                delete_journal_entry
-            )
-
             st.markdown("Write down anything you're feeling or thinking.")
             journal_text = st.text_area("New Entry", placeholder="Start writing here...")
 
@@ -147,7 +126,6 @@ def main():
                 else:
                     st.warning("Entry cannot be empty.")
 
-            # Display past entries
             st.markdown("### 📚 Previous Entries")
             entries = get_journal_entries(st.session_state["username"])
 
@@ -175,10 +153,10 @@ def main():
                                 st.rerun()
 
         elif page == "Logout":
-            st.session_state['logged_in'] = False
-            st.success("You have been logged out!")
-
-        
+            if st.button("Confirm Logout", help="Click to log out"):
+                st.session_state['logged_in'] = False
+                st.success("You have been logged out.")
+                st.rerun()
 
 if __name__ == "__main__":
     main()
