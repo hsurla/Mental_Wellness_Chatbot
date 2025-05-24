@@ -54,7 +54,7 @@ def main():
 
             if "chat_history" not in st.session_state:
                 st.session_state.chat_history = []
-
+                
             chat_container = st.container()
             with chat_container:
                 for item in st.session_state.chat_history:
