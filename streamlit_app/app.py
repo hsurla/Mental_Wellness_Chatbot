@@ -1,7 +1,7 @@
 import streamlit as st
 import pyrebase
 from datetime import datetime
-from streamlit_app.login import login_page
+from .login import login_page
 from streamlit_app.register import registration_page as legacy_registration_page  # legacy, not used
 from streamlit_app.chatbot import chat_with_bot
 from streamlit_app.sidebar import sidebar
