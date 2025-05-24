@@ -1,5 +1,6 @@
 # streamlit_app/app.py
 
+import pyrebase
 import streamlit as st
 from datetime import datetime
 from streamlit_app.login import login_page
