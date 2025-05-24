@@ -10,35 +10,7 @@ from streamlit_app.sidebar import sidebar
 from database.database import get_chat_history
 from streamlit_app.wellness import wellness_page
 from streamlit_app.profile import profile_page
-from streamlit_app.firebase_config import firebaseConfig
-
-firebase = pyrebase.initialize_app(firebaseConfig)
-auth = firebase.auth()
-
-def google_auth_page():
-    st.title("🔐 Login / Register with Firebase")
-
-    choice = st.radio("Choose Option:", ["Login", "Register"])
-
-    email = st.text_input("Email")
-    password = st.text_input("Password", type="password")
-
-    if choice == "Register":
-        if st.button("Create Account"):
-            try:
-                user = auth.create_user_with_email_and_password(email, password)
-                st.success("Account created successfully!")
-            except Exception as e:
-                st.error(f"Error: {e}")
-    else:
-        if st.button("Login"):
-            try:
-                user = auth.sign_in_with_email_and_password(email, password)
-                st.success("Logged in successfully!")
-                st.session_state['logged_in'] = True
-                st.session_state['username'] = email
-            except Exception as e:
-                st.error(f"Login failed: {e}")
+#from streamlit_app.firebase_config import firebaseConfig
 
 def main():
     st.set_page_config(page_title="Mental Wellness Chatbot", layout="wide")
