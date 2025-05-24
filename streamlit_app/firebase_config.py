@@ -1,3 +1,5 @@
+import pyrebase
+
 firebaseConfig = {
   "apiKey": "YOUR_API_KEY",
   "authDomain": "YOUR_PROJECT.firebaseapp.com",

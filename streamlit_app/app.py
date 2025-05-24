@@ -1,7 +1,6 @@
 # streamlit_app/app.py
 
 import streamlit as st
-import pyrebase
 from datetime import datetime
 from streamlit_app.login import login_page
 from streamlit_app.register import registration_page
