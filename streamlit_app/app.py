@@ -1,6 +1,7 @@
 # streamlit_app/app.py
 
 import streamlit as st
+import pyrebase
 from datetime import datetime
 from streamlit_app.login import login_page
 from streamlit_app.register import registration_page
@@ -38,7 +39,7 @@ def google_auth_page():
                 st.session_state['username'] = email
             except Exception as e:
                 st.error(f"Login failed: {e}")
-                
+
 def main():
     st.set_page_config(page_title="Mental Wellness Chatbot", layout="wide")
 
