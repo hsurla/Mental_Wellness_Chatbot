@@ -5,6 +5,7 @@ from pymongo import MongoClient
 from datetime import datetime
 import os
 from bson.objectid import ObjectId
+import bcrypt
 
 # MongoDB Atlas Connection
 MONGO_URI = "mongodb+srv://rtxklaus1:9Oj0O6RmDeYZM5za@mental-wellness-chatbot.ta0sbvh.mongodb.net/"
@@ -14,12 +15,14 @@ users_collection = db["users"]
 
 # Add a new user during registration
 def add_user(username, password):
+    hashed_pw = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
     users_collection.insert_one({
         "username": username,
-        "password": password,
+        "password": hashed_pw,
         "mood_history": [],
         "crisis_flags": [],
-        "chat_logs": []
+        "chat_logs": [],
+        "journal_entries": []
     })
 
 # Find a user during login
