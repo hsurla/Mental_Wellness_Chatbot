@@ -1,108 +1,114 @@
 # streamlit_app/login.py
 
 import streamlit as st
-import bcrypt
-import streamlit.components.v1 as components
 import requests
-from streamlit_js_eval import streamlit_js_eval
+import bcrypt
+from urllib.parse import urlencode
 from database.database import find_user, add_user
 
+# Google OAuth2 credentials
+CLIENT_ID ="639432204726-af4d4q5v8a82cs67uo33djmhdgqujsf1.apps.googleusercontent.com"
+CLIENT_SECRET = "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"
+REDIRECT_URI = "http://localhost:8501"  # Or your deployed Streamlit URL
+
 def login_page():
+    # Step 1: Handle Google OAuth2 redirect
+    code = st.query_params.get("code")
+    if code:
+        token_response = requests.post(
+            "https://oauth2.googleapis.com/token",
+            data={
+                "code": code,
+                "client_id": CLIENT_ID,
+                "client_secret": CLIENT_SECRET,
+                "redirect_uri": REDIRECT_URI,
+                "grant_type": "authorization_code"
+            }
+        )
+        if token_response.status_code == 200:
+            tokens = token_response.json()
+            access_token = tokens.get("access_token")
+
+            userinfo_response = requests.get(
+                "https://www.googleapis.com/oauth2/v2/userinfo",
+                headers={"Authorization": f"Bearer {access_token}"}
+            )
+
+            if userinfo_response.status_code == 200:
+                user_info = userinfo_response.json()
+                email = user_info["email"]
+                st.success(f"✅ Logged in as: {email}")
+                st.session_state["username"] = email
+                st.session_state["logged_in"] = True
+
+                if not find_user(email):
+                    add_user(email, "")  # Register Google user with blank password
+
+                return  # Skip showing the manual login form
+            else:
+                st.error("❌ Failed to retrieve user info.")
+                return
+        else:
+            st.error("❌ Failed to get access token.")
+            return
+
+    # Step 2: Google Sign-In Button (if not logged in via redirect)
     st.markdown("### 🔐 Sign in with Google")
+    params = {
+        "client_id": CLIENT_ID,
+        "response_type": "code",
+        "redirect_uri": REDIRECT_URI,
+        "scope": "openid email profile",
+        "access_type": "offline",
+        "prompt": "consent"
+    }
+    google_login_url = f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}"
+    st.markdown(f"[👉 Click here to Sign in with Google]({google_login_url})")
 
-    components.html(f"""
-<html>
-  <head>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-  </head>
-  <body>
-    <button onclick="signInWithGoogle()">Sign in with Google</button>
-    <input type="text" id="email_output" style="display:none"/>
-
-    <script>
-      const firebaseConfig = {{
-        apiKey: "AIzaSyBQgmp214Gvi8PcmaX56NP7HjXPbXl0sws",
-        authDomain: "mental-wellness-chatbot-a77b2.firebaseapp.com",
-        projectId: "mental-wellness-chatbot-a77b2",
-        storageBucket: "mental-wellness-chatbot-a77b2.firebasestorage.app",
-        messagingSenderId: "639432204726",
-        appId: "1:639432204726:web:e52557c4ef6e5a6987a117"
-      }};
-      firebase.initializeApp(firebaseConfig);
-
-      function signInWithGoogle() {{
-        const provider = new firebase.auth.GoogleAuthProvider();
-        firebase.auth().signInWithPopup(provider).then((result) => {{
-          const user = result.user;
-          document.getElementById("email_output").value = user.email;
-        }}).catch((error) => {{
-          console.error(error);
-        }});
-      }}
-    </script>
-  </body>
-</html>
-""", height=250)
-
-    # Listen for email from Firebase
-    email = streamlit_js_eval(
-    js_expressions="document.getElementById('email_output')?.value",
-    key="google_email"
-)
-
-
-    if email:
-        st.success(f"✅ Logged in as: {email}")
-        st.session_state['username'] = email
-        st.session_state['logged_in'] = True
-
-        # Create Google user if new
-        if not find_user(email):
-            add_user(email, "")  # Password empty for Google login users
-
-    st.title("Login")
-
+    # Step 3: Manual Login Section
+    st.title("Login with Username and Password")
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
 
-    #recaptcha
-    st.markdown("""
-                <script src='https://www.google.com/recaptcha/api.js'></script>
-                <form action="?" method="POST">
-                <div class="g-recaptcha" data-sitekey="6LcSOU4rAAAAAGphyafMH1TIE7TuoGiaMB9GKwAP"></div>
-                <br/>
-                </form>
-                """, unsafe_allow_html=True)
-    
-    # Get the recaptcha token from query params (Streamlit workaround)
-    query_params = st.experimental_get_query_params()
-    recaptcha_token = query_params.get("g-recaptcha-response", [None])[0]
+    # Step 4: Google reCAPTCHA
+    st.components.v1.html("""
+    <html>
+      <head>
+        <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+      </head>
+      <body>
+        <form action="?" method="POST">
+          <div class="g-recaptcha" data-sitekey="6LcSOU4rAAAAAGphyafMH1TIE7TuoGiaMB9GKwAP"></div>
+          <br/>
+        </form>
+      </body>
+    </html>
+""", height=150)
+
+    recaptcha_token = st.query_params.get("g-recaptcha-response", [None])[0]
 
     if not recaptcha_token:
-        st.warning("⚠️ Please complete the reCAPTCHA.")
+        st.warning("Please complete the reCAPTCHA.")
         return
 
-    # Verify the token with Google
     recaptcha_secret = "6LcSOU4rAAAAAFTf5LUY429GMWEC1m3egehwsUs8"
-    response = requests.post(
-    "https://www.google.com/recaptcha/api/siteverify",
-    data={"secret": recaptcha_secret, "response": recaptcha_token}
-    )
-    result = response.json()
+    recaptcha_response = requests.post(
+        "https://www.google.com/recaptcha/api/siteverify",
+        data={"secret": recaptcha_secret, "response": recaptcha_token}
+    ).json()
 
-    if not result.get("success"):
-        st.error("❌ reCAPTCHA verification failed.")
+    if not recaptcha_response.get("success"):
+        st.error("reCAPTCHA verification failed.")
         return
 
-
+    # Step 5: Handle manual login
     if st.button("Login"):
         user = find_user(username)
         if user:
             if bcrypt.checkpw(password.encode(), user["password"].encode()):
-                st.success(f"Welcome, {username}!")
+                st.success(f"✅ Welcome, {username}!")
                 st.session_state["username"] = username
-                st.session_state['logged_in'] = True
+                st.session_state["logged_in"] = True
             else:
                 st.error("Incorrect password.")
         else:

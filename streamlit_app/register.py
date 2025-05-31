@@ -11,13 +11,20 @@ def registration_page():
     confirm_password = st.text_input("Confirm Password", type="password")
 
     #recaptcha
-    st.markdown("""
-                <script src='https://www.google.com/recaptcha/api.js'></script>
-                <form action="?" method="POST">
-                <div class="g-recaptcha" data-sitekey="6LcSOU4rAAAAAGphyafMH1TIE7TuoGiaMB9GKwAP"></div>
-                <br/>
-                </form>
-                """, unsafe_allow_html=True)
+    st.components.v1.html("""
+    <html>
+      <head>
+        <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+      </head>
+      <body>
+        <form action="?" method="POST">
+          <div class="g-recaptcha" data-sitekey="6LcSOU4rAAAAAGphyafMH1TIE7TuoGiaMB9GKwAP"></div>
+          <br/>
+        </form>
+      </body>
+    </html>
+""", height=150)
+
     
     # Get the recaptcha token from query params (Streamlit workaround)
     query_params = st.experimental_get_query_params()
