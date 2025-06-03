@@ -11,9 +11,6 @@ from database.database import find_user, add_user
 CLIENT_ID ="639432204726-af4d4q5v8a82cs67uo33djmhdgqujsf1.apps.googleusercontent.com"
 CLIENT_SECRET = "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"
 REDIRECT_URI = "http://localhost:8501"  # Or your deployed Streamlit URL
-#recaptcha credentials
-RECAPTCHA_SITE_KEY = "6LcjG1IrAAAAAGqJbpWsE8tGX-QHebp-xt1CaDUS"
-RECAPTCHA_SECRET_KEY = "6LcjG1IrAAAAAN0OKNJVoHiIdtEiIdXsg79GXz3D"
 
 def login_page():
     code = st.query_params.get("code")
@@ -71,30 +68,12 @@ def login_page():
     #Manual Login Section
     st.title("Login")
 
-    recaptcha_token = None
     with st.form(key="login_form"):
         username = st.text_input("Username")
         password = st.text_input("Password", type="password")
         submitted = st.form_submit_button("Login")
 
-        #Google reCAPTCHA
-        html(f"""
-        <div class="g-recaptcha" data-sitekey="{RECAPTCHA_SITE_KEY}"></div>
-        <script src="https://www.google.com/recaptcha/api.js"></script>
-        """, height=150)
-
         if submitted:
-            recaptcha_token = st.query_params.get("g-recaptcha-response", "")
-
-    if recaptcha_token:
-        result = requests.post("https://www.google.com/recaptcha/api/siteverify", data={
-            "secret": RECAPTCHA_SECRET_KEY,
-            "response": recaptcha_token
-        }).json()
-
-        if not result.get("success"):
-            st.error("❌ reCAPTCHA verification failed.")
-        else:
             user = find_user(username)
             if user:
                 if bcrypt.checkpw(password.encode(), user["password"].encode()):
