@@ -1,6 +1,5 @@
 #streamlit_app/app.py
 
-#import pyrebase
 import streamlit as st
 from datetime import datetime
 from streamlit_app.login import login_page
@@ -10,7 +9,6 @@ from streamlit_app.sidebar import sidebar
 from database.database import get_chat_history
 from streamlit_app.wellness import wellness_page
 from streamlit_app.profile import profile_page
-#from streamlit_app.firebase_config import firebaseConfig
 
 def main():
     st.set_page_config(page_title="Mental Wellness Chatbot", layout="wide")
