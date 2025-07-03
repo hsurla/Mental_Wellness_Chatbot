@@ -9,6 +9,7 @@ from streamlit_app.sidebar import sidebar
 from database.database import get_chat_history
 from streamlit_app.wellness import wellness_page
 from streamlit_app.profile import profile_page
+from streamlit_app.fun_support import get_fun_activity, get_healthy_snack  # ✅ Imported APIs
 
 def main():
     st.set_page_config(page_title="Mental Wellness Chatbot", layout="wide")
@@ -71,8 +72,17 @@ def main():
                         #flag to clear input next run
                         st.session_state["clear_input"] = True
                         st.rerun()
+
         elif page == "Wellness":
-            wellness_page()                
+            wellness_page()
+
+            st.markdown("---")
+            st.subheader("🎲 Fun Activity Suggestion")
+            st.info(get_fun_activity())
+
+            st.subheader("🥗 Healthy Snack Suggestion")
+            st.success(get_healthy_snack())
+
         elif page == "Chat History":
             st.title("🕒 Your Chat History")
 
@@ -148,8 +158,7 @@ def main():
             st.session_state['logged_in'] = False
             st.success("You have been logged out!")
 
-        
-
 if __name__ == "__main__":
     main()
+
 
