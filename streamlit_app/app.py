@@ -12,11 +12,12 @@ from streamlit_app.fun_support import get_fun_activity, get_healthy_snack
 def main():
     st.set_page_config(page_title="Mental Wellness Chatbot", layout="wide")
 
-    # Handle auto-login if credentials provided via Google redirect (mock behavior)
+    # ✅ Google login success via query params
     if st.query_params.get("google_login_success") and not st.session_state.get("logged_in"):
         email = st.query_params.get("email", "user@example.com")
         st.session_state['logged_in'] = True
         st.session_state['username'] = email
+        st.experimental_set_query_params()  # Clear params after use
         st.rerun()
 
     if 'logged_in' not in st.session_state:
@@ -35,6 +36,8 @@ def main():
         )
 
     if not st.session_state['logged_in']:
+        if st.query_params.get("google_login_success"):
+            st.stop()  # Prevent login UI if redirect is in progress
         choice = st.selectbox("Login / Register", ["Login", "Register"])
         if choice == "Login":
             login_page()
