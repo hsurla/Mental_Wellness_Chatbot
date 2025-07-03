@@ -1,4 +1,3 @@
-
 import streamlit as st
 from datetime import datetime
 from streamlit_app.login import login_page
@@ -8,15 +7,21 @@ from streamlit_app.sidebar import sidebar
 from database.database import get_chat_history
 from streamlit_app.wellness import wellness_page
 from streamlit_app.profile import profile_page
-from streamlit_app.fun_support import get_fun_activity, get_healthy_snack  # ✅ Imported APIs
+from streamlit_app.fun_support import get_fun_activity, get_healthy_snack
 
 def main():
     st.set_page_config(page_title="Mental Wellness Chatbot", layout="wide")
 
+    # Handle auto-login if credentials provided via Google redirect (mock behavior)
+    if st.query_params.get("google_login_success") and not st.session_state.get("logged_in"):
+        email = st.query_params.get("email", "user@example.com")
+        st.session_state['logged_in'] = True
+        st.session_state['username'] = email
+        st.rerun()
+
     if 'logged_in' not in st.session_state:
         st.session_state['logged_in'] = False
 
-    # ✅ Show floating login notification if user is logged in
     if st.session_state.get("logged_in") and st.session_state.get("username"):
         st.markdown(
             f"""
@@ -44,7 +49,6 @@ def main():
             if "chat_history" not in st.session_state:
                 st.session_state.chat_history = []
 
-            # Display chat history (top)
             chat_container = st.container()
             with chat_container:
                 for item in st.session_state.chat_history:
@@ -59,15 +63,12 @@ def main():
                     else:
                         st.markdown(f"**🤖 Bot:** {msg}  \n<sub>{time}</sub>", unsafe_allow_html=True)
 
-            # Spacer
             st.markdown("<br>", unsafe_allow_html=True)
 
-            #Clear the input before rendering the widget
             if st.session_state.get("clear_input", False):
                 st.session_state["chat_input"] = ""
                 st.session_state["clear_input"] = False
 
-            # Input field and button (bottom)
             with st.container():
                 st.markdown("### 👇 Type your message")
                 user_message = st.text_input("Type here", key="chat_input", label_visibility="collapsed")
@@ -75,31 +76,24 @@ def main():
                 send = st.button("📤 Send Message", use_container_width=True)
 
                 if send and user_message.strip():
-                        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-                        st.session_state.chat_history.append(("You", user_message, current_time))
-                        response, emotion, current_time = chat_with_bot(st.session_state['username'], user_message)
-                        st.session_state.chat_history.append(("Bot", f"{response} *(Mood: {emotion})*", current_time))
-
-                        #flag to clear input next run
-                        st.session_state["clear_input"] = True
-                        st.rerun()
+                    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    st.session_state.chat_history.append(("You", user_message, current_time))
+                    response, emotion, current_time = chat_with_bot(st.session_state['username'], user_message)
+                    st.session_state.chat_history.append(("Bot", f"{response} *(Mood: {emotion})*", current_time))
+                    st.session_state["clear_input"] = True
+                    st.rerun()
 
         elif page == "Wellness":
             wellness_page()
-
             st.markdown("---")
             st.subheader("🎲 Fun Activity Suggestion")
             st.info(get_fun_activity())
-
             st.subheader("🥗 Healthy Snack Suggestion")
             st.success(get_healthy_snack())
 
         elif page == "Chat History":
             st.title("🕒 Your Chat History")
-
             chat_logs = get_chat_history(st.session_state['username'])
-
             if not chat_logs:
                 st.info("No chat history avaiable.")
             else:
@@ -108,7 +102,6 @@ def main():
                     bot_msg = entry.get("bot_response", "")
                     mood = entry.get("emotion_detected", "unknown")
                     time = entry.get("timestamp", "unknown")
-
                     st.markdown(f"""
                     **🧑 You:** {user_msg}  
                     **🤖 Bot:** {bot_msg} *(Mood: {mood})*  
@@ -121,7 +114,7 @@ def main():
 
         elif page == "Journal":
             st.title("📔 Your Personal Journal")
-            from database.database import(
+            from database.database import (
                 save_journal_entry,
                 get_journal_entries,
                 update_journal_entry,
@@ -139,7 +132,6 @@ def main():
                 else:
                     st.warning("Entry cannot be empty.")
 
-            # Display past entries
             st.markdown("### 📚 Previous Entries")
             entries = get_journal_entries(st.session_state["username"])
 
@@ -150,10 +142,8 @@ def main():
                     entry_id = str(entry.get("_id"))
                     time = entry.get("timestamp", "")
                     text = entry.get("text", "")
-
                     with st.expander(f"🕒 {time}"):
                         edited_text = st.text_area("Edit entry", value=text, key=entry_id)
-
                         col1, col2 = st.columns([1, 1])
                         with col1:
                             if st.button("Update", key=f"update_{entry_id}"):
