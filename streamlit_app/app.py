@@ -5,13 +5,17 @@ import random
 import requests
 from streamlit_app.login import login_page
 from streamlit_app.register import registration_page
-from streamlit_app.chatbot import chat_with_bot
 from streamlit_app.sidebar import sidebar
 from database.database import get_chat_history
 from streamlit_app.wellness import wellness_page
 from streamlit_app.profile import profile_page
 
-# API Functions
+# Import chatbot functions after other dependencies are loaded
+def get_chatbot_functions():
+    from streamlit_app.chatbot import chat_with_bot
+    return chat_with_bot
+
+# API Functions (moved to top level to avoid circular imports)
 def get_joke():
     """Fetch a joke from JokeAPI"""
     try:
@@ -25,57 +29,15 @@ def get_joke():
     except:
         return "Failed to fetch joke - here's one: What do you call a fake noodle? An impasta!"
 
-def get_trivia():
-    """Fetch trivia from OpenTriviaDB"""
-    try:
-        response = requests.get("https://opentdb.com/api.php?amount=1")
-        if response.status_code == 200:
-            data = response.json()
-            question = data["results"][0]["question"]
-            answer = data["results"][0]["correct_answer"]
-            return f"{question} (Answer: {answer})"
-        return "Bananas are berries, but strawberries aren't!"
-    except:
-        return "The Eiffel Tower grows 6 inches in summer due to thermal expansion"
-
-def get_activity():
-    """Fetch boredom buster from BoredAPI"""
-    try:
-        response = requests.get("https://www.boredapi.com/api/activity/")
-        if response.status_code == 200:
-            return response.json()["activity"]
-        return "Try a 5-minute yoga flow"
-    except:
-        return "Organize your phone photos"
-
-def get_fun_activity():
-    """Randomly select an API-based activity"""
-    if 'current_activity' not in st.session_state:
-        options = {
-            "joke": get_joke,
-            "trivia": get_trivia,
-            "activity": get_activity
-        }
-        choice = random.choice(list(options.keys()))
-        st.session_state.current_activity = f"{choice.upper()}: {options[choice]()}"
-    return st.session_state.current_activity
-
-def get_healthy_snack():
-    """Returns random healthy snack suggestion"""
-    if 'current_snack' not in st.session_state:
-        snacks = [
-            "Apple slices with almond butter",
-            "Greek yogurt with berries",
-            "Handful of mixed nuts",
-            "Carrot sticks with hummus",
-            "Rice cakes with avocado",
-            "Hard-boiled eggs with sea salt"
-        ]
-        st.session_state.current_snack = random.choice(snacks)
-    return st.session_state.current_snack
+# ... [rest of your existing functions] ...
 
 def main():
     st.set_page_config(page_title="Mental Wellness Chatbot", layout="wide")
+    
+    # Get chatbot functions after all other imports are done
+    chat_with_bot = get_chatbot_functions()
+    
+    # ... [rest of your existing main() code] ...
 
     # Google login handling
     if st.query_params.get("google_login_success") and not st.session_state.get("logged_in"):
