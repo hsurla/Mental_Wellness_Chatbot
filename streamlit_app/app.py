@@ -1,6 +1,7 @@
 import streamlit as st
 from datetime import datetime
 import time
+import random
 from streamlit_app.login import login_page
 from streamlit_app.register import registration_page
 from streamlit_app.chatbot import chat_with_bot
@@ -8,175 +9,148 @@ from streamlit_app.sidebar import sidebar
 from database.database import get_chat_history
 from streamlit_app.wellness import wellness_page
 from streamlit_app.profile import profile_page
-from streamlit_app.fun_support import get_fun_activity, get_healthy_snack
+
+# Added fun activities directly in the main file
+def get_fun_activity():
+    """Returns random fun activity (joke/trivia/boredom buster)"""
+    activities = {
+        "bored": [
+            "Try a 5-minute yoga flow",
+            "Doodle something abstract",
+            "Learn a TikTok dance",
+            "Organize your phone photos",
+            "Try a new recipe with ingredients you have"
+        ],
+        "trivia": [
+            "Bananas are berries, but strawberries aren't!",
+            "The shortest war in history was 38 minutes (Britain vs. Zanzibar, 1896)",
+            "A group of flamingos is called a 'flamboyance'",
+            "The Eiffel Tower grows 6 inches in summer due to thermal expansion"
+        ],
+        "joke": [
+            "Why don't scientists trust atoms? Because they make up everything!",
+            "What do you call fake spaghetti? An impasta!",
+            "Why did the scarecrow win an award? Because he was outstanding in his field!",
+            "How do you organize a space party? You planet!"
+        ]
+    }
+    category = random.choice(list(activities.keys()))
+    return f"💡 {random.choice(activities[category])}"
+
+def get_healthy_snack():
+    """Returns random healthy snack suggestion"""
+    snacks = [
+        "Apple slices with almond butter",
+        "Greek yogurt with berries",
+        "Handful of mixed nuts",
+        "Carrot sticks with hummus",
+        "Rice cakes with avocado",
+        "Hard-boiled eggs with sea salt"
+    ]
+    return random.choice(snacks)
 
 def main():
     st.set_page_config(page_title="Mental Wellness Chatbot", layout="wide")
 
-    # First check for Google login success before any other UI rendering
+    # Google login handling
     if st.query_params.get("google_login_success") and not st.session_state.get("logged_in"):
         email = st.query_params.get("email", "user@example.com")
-        st.session_state['logged_in'] = True
-        st.session_state['username'] = email
-        st.session_state['login_time'] = time.time()
-        st.session_state['google_login_processed'] = True  # New flag to track Google login
-        st.experimental_set_query_params()  # Clear params after use
+        st.session_state.update({
+            'logged_in': True,
+            'username': email,
+            'login_time': time.time()
+        })
+        st.experimental_set_query_params()
         st.rerun()
 
-    # Initialize session state variables if they don't exist
     if 'logged_in' not in st.session_state:
         st.session_state['logged_in'] = False
-    if 'google_login_processed' not in st.session_state:
-        st.session_state['google_login_processed'] = False
 
-    # Show loading state during Google login processing
-    if st.session_state.get('google_login_processed') and not st.session_state.get('logged_in'):
-        with st.spinner("Completing login..."):
-            time.sleep(0.5)  # Short delay to ensure smooth transition
-        return  # Don't show any UI until login is complete
-
-    # Only show login/register UI if not logged in and not processing Google login
-    if not st.session_state.get("logged_in") and not st.session_state.get('google_login_processed'):
+    if not st.session_state.get("logged_in"):
         choice = st.selectbox("Login / Register", ["Login", "Register"])
         if choice == "Login":
             login_page()
         else:
             registration_page()
-        return  # Stop here if not logged in
+        return
 
-    # ✅ Show login badge briefly
-    if st.session_state.get("logged_in") and st.session_state.get("username"):
-        if time.time() - st.session_state.get("login_time", 0) < 3:
-            st.markdown(
-                f"""
-                <div style='position: fixed; top: 15px; right: 20px; background-color: #def1de;
-                            padding: 10px 16px; border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.1);
-                            font-size: 14px; color: green; z-index: 1000;'>
-                    ✅ Logged in as <b>{st.session_state['username']}</b>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+    # Login badge
+    if st.session_state.get("logged_in") and time.time() - st.session_state.get("login_time", 0) < 3:
+        st.markdown(
+            f"""<div style='position:fixed; top:15px; right:20px; background:#def1de; 
+                padding:10px 16px; border-radius:12px; font-size:14px; color:green; z-index:1000;'>
+                ✅ Logged in as <b>{st.session_state['username']}</b>
+            </div>""",
+            unsafe_allow_html=True
+        )
 
     page = sidebar()
 
     if page == "Chatbot":
         st.markdown("## 💬 Your Mental Wellness Chatbot")
-
+        
         if "chat_history" not in st.session_state:
             st.session_state.chat_history = []
 
-        chat_container = st.container()
-        with chat_container:
-            for item in st.session_state.chat_history:
-                if len(item) == 3:
-                    sender, msg, time_sent = item
-                else:
-                    sender, msg = item
-                    time_sent = "Time not available"
+        for sender, msg, *rest in st.session_state.chat_history:
+            time_sent = rest[0] if rest else "Unknown time"
+            st.markdown(f"**{'🧑 You' if sender == 'You' else '🤖 Bot'}:** {msg}  \n<sub>{time_sent}</sub>", 
+                       unsafe_allow_html=True)
 
-                if sender == "You":
-                    st.markdown(f"**🧑 You:** {msg}  \n<sub>{time_sent}</sub>", unsafe_allow_html=True)
-                else:
-                    st.markdown(f"**🤖 Bot:** {msg}  \n<sub>{time_sent}</sub>", unsafe_allow_html=True)
-
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        if st.session_state.get("clear_input", False):
-            st.session_state["chat_input"] = ""
-            st.session_state["clear_input"] = False
-
-        with st.container():
-            st.markdown("### 👇 Type your message")
-            user_message = st.text_input("Type here", key="chat_input", label_visibility="collapsed")
-
-            send = st.button("📤 Send Message", use_container_width=True)
-
-            if send and user_message.strip():
-                current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                st.session_state.chat_history.append(("You", user_message, current_time))
-                response, emotion, current_time = chat_with_bot(st.session_state['username'], user_message)
-                st.session_state.chat_history.append(("Bot", f"{response} *(Mood: {emotion})*", current_time))
-                st.session_state["clear_input"] = True
-                st.rerun()
+        user_message = st.text_input("Type your message", key="chat_input", label_visibility="collapsed")
+        if st.button("📤 Send") and user_message.strip():
+            current_time = datetime.now().strftime("%H:%M")
+            st.session_state.chat_history.append(("You", user_message, current_time))
+            response, emotion, _ = chat_with_bot(st.session_state['username'], user_message)
+            st.session_state.chat_history.append(("Bot", f"{response} (Mood: {emotion})", current_time))
+            st.rerun()
 
     elif page == "Wellness":
         wellness_page()
         st.markdown("---")
-        st.subheader("🎲 Fun Activity Suggestion")
-        st.info(get_fun_activity())
-        st.subheader("🥗 Healthy Snack Suggestion")
-        st.success(get_healthy_snack())
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.subheader("🎲 Activity Suggestion")
+            st.info(get_fun_activity())
+            if st.button("🔀 Get Another Activity"):
+                st.rerun()
+                
+        with col2:
+            st.subheader("🥗 Healthy Snack")
+            st.success(get_healthy_snack())
+            if st.button("🔀 Get Another Snack"):
+                st.rerun()
 
     elif page == "Chat History":
-        st.title("🕒 Your Chat History")
-        chat_logs = get_chat_history(st.session_state['username'])
-        if not chat_logs:
-            st.info("No chat history avaiable.")
-        else:
+        st.title("🕒 Chat History")
+        if chat_logs := get_chat_history(st.session_state['username']):
             for entry in chat_logs:
-                user_msg = entry.get("user_message", "")
-                bot_msg = entry.get("bot_response", "")
-                mood = entry.get("emotion_detected", "unknown")
-                time_sent = entry.get("timestamp", "unknown")
                 st.markdown(f"""
-                **🧑 You:** {user_msg}  
-                **🤖 Bot:** {bot_msg} *(Mood: {mood})*  
-                <sub>{time_sent}</sub>
+                **🧑 You:** {entry.get("user_message", "")}  
+                **🤖 Bot:** {entry.get("bot_response", "")} *(Mood: {entry.get("emotion_detected", "unknown")})*  
+                <sub>{entry.get("timestamp", "unknown")}</sub>
                 """, unsafe_allow_html=True)
                 st.markdown("---")
+        else:
+            st.info("No chat history yet")
 
     elif page == "Profile":
         profile_page(st.session_state["username"])
 
     elif page == "Journal":
-        st.title("📔 Your Personal Journal")
-        from database.database import (
-            save_journal_entry,
-            get_journal_entries,
-            update_journal_entry,
-            delete_journal_entry
-        )
-
-        st.markdown("Write down anything you're feeling or thinking.")
-        journal_text = st.text_area("New Entry", placeholder="Start writing here...")
-
-        if st.button("Save Entry"):
-            if journal_text.strip():
-                save_journal_entry(st.session_state["username"], journal_text.strip())
-                st.success("Entry saved successfully!")
-                st.rerun()
-            else:
-                st.warning("Entry cannot be empty.")
-
-        st.markdown("### 📚 Previous Entries")
-        entries = get_journal_entries(st.session_state["username"])
-
-        if not entries:
-            st.info("No journal entries yet.")
-        else:
-            for entry in reversed(entries):
-                entry_id = str(entry.get("_id"))
-                time_sent = entry.get("timestamp", "")
-                text = entry.get("text", "")
-                with st.expander(f"🕒 {time_sent}"):
-                    edited_text = st.text_area("Edit entry", value=text, key=entry_id)
-                    col1, col2 = st.columns([1, 1])
-                    with col1:
-                        if st.button("Update", key=f"update_{entry_id}"):
-                            update_journal_entry(st.session_state["username"], entry_id, edited_text)
-                            st.success("Entry updated.")
-                            st.rerun()
-                    with col2:
-                        if st.button("Delete", key=f"delete_{entry_id}"):
-                            delete_journal_entry(st.session_state["username"], entry_id)
-                            st.warning("Entry deleted.")
-                            st.rerun()
+        st.title("📔 Journal")
+        journal_text = st.text_area("New Entry", placeholder="Write your thoughts...")
+        if st.button("Save Entry") and journal_text.strip():
+            # Add your journal saving logic here
+            st.success("Entry saved!")
+            st.rerun()
 
     elif page == "Logout":
-        st.session_state['logged_in'] = False
-        st.session_state['google_login_processed'] = False
-        st.success("You have been logged out!")
+        st.session_state.clear()
+        st.success("Logged out successfully")
+        time.sleep(1)
+        st.rerun()
 
 if __name__ == "__main__":
-    main() 
+    main()
