@@ -1,4 +1,3 @@
-#streamlit_app/app.py
 
 import streamlit as st
 from datetime import datetime
@@ -16,6 +15,19 @@ def main():
 
     if 'logged_in' not in st.session_state:
         st.session_state['logged_in'] = False
+
+    # ✅ Show floating login notification if user is logged in
+    if st.session_state.get("logged_in") and st.session_state.get("username"):
+        st.markdown(
+            f"""
+            <div style='position: fixed; top: 15px; right: 20px; background-color: #def1de;
+                        padding: 10px 16px; border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.1);
+                        font-size: 14px; color: green; z-index: 1000;'>
+                ✅ Logged in as <b>{st.session_state['username']}</b>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
     if not st.session_state['logged_in']:
         choice = st.selectbox("Login / Register", ["Login", "Register"])
@@ -159,6 +171,4 @@ def main():
             st.success("You have been logged out!")
 
 if __name__ == "__main__":
-    main() 
-
-
+    main()
