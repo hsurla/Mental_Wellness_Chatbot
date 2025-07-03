@@ -1,5 +1,6 @@
 import streamlit as st
 from datetime import datetime
+import time
 from streamlit_app.login import login_page
 from streamlit_app.register import registration_page
 from streamlit_app.chatbot import chat_with_bot
@@ -17,6 +18,7 @@ def main():
         email = st.query_params.get("email", "user@example.com")
         st.session_state['logged_in'] = True
         st.session_state['username'] = email
+        st.session_state['login_time'] = time.time()
         st.experimental_set_query_params()  # Clear params after use
         st.rerun()
 
@@ -31,17 +33,19 @@ def main():
             registration_page()
         return  # 🛑 Stop here if not logged in
 
+    # ✅ Show login badge briefly
     if st.session_state.get("logged_in") and st.session_state.get("username"):
-        st.markdown(
-            f"""
-            <div style='position: fixed; top: 15px; right: 20px; background-color: #def1de;
-                        padding: 10px 16px; border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.1);
-                        font-size: 14px; color: green; z-index: 1000;'>
-                ✅ Logged in as <b>{st.session_state['username']}</b>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+        if time.time() - st.session_state.get("login_time", 0) < 3:
+            st.markdown(
+                f"""
+                <div style='position: fixed; top: 15px; right: 20px; background-color: #def1de;
+                            padding: 10px 16px; border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.1);
+                            font-size: 14px; color: green; z-index: 1000;'>
+                    ✅ Logged in as <b>{st.session_state['username']}</b>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
     page = sidebar()
 
@@ -55,15 +59,15 @@ def main():
         with chat_container:
             for item in st.session_state.chat_history:
                 if len(item) == 3:
-                    sender, msg, time = item
+                    sender, msg, time_sent = item
                 else:
                     sender, msg = item
-                    time = "Time not available"
+                    time_sent = "Time not available"
 
                 if sender == "You":
-                    st.markdown(f"**🧑 You:** {msg}  \n<sub>{time}</sub>", unsafe_allow_html=True)
+                    st.markdown(f"**🧑 You:** {msg}  \n<sub>{time_sent}</sub>", unsafe_allow_html=True)
                 else:
-                    st.markdown(f"**🤖 Bot:** {msg}  \n<sub>{time}</sub>", unsafe_allow_html=True)
+                    st.markdown(f"**🤖 Bot:** {msg}  \n<sub>{time_sent}</sub>", unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
 
@@ -103,11 +107,11 @@ def main():
                 user_msg = entry.get("user_message", "")
                 bot_msg = entry.get("bot_response", "")
                 mood = entry.get("emotion_detected", "unknown")
-                time = entry.get("timestamp", "unknown")
+                time_sent = entry.get("timestamp", "unknown")
                 st.markdown(f"""
                 **🧑 You:** {user_msg}  
                 **🤖 Bot:** {bot_msg} *(Mood: {mood})*  
-                <sub>{time}</sub>
+                <sub>{time_sent}</sub>
                 """, unsafe_allow_html=True)
                 st.markdown("---")
 
@@ -142,9 +146,9 @@ def main():
         else:
             for entry in reversed(entries):
                 entry_id = str(entry.get("_id"))
-                time = entry.get("timestamp", "")
+                time_sent = entry.get("timestamp", "")
                 text = entry.get("text", "")
-                with st.expander(f"🕒 {time}"):
+                with st.expander(f"🕒 {time_sent}"):
                     edited_text = st.text_area("Edit entry", value=text, key=entry_id)
                     col1, col2 = st.columns([1, 1])
                     with col1:
