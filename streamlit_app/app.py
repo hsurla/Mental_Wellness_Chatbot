@@ -13,25 +13,36 @@ from streamlit_app.fun_support import get_fun_activity, get_healthy_snack
 def main():
     st.set_page_config(page_title="Mental Wellness Chatbot", layout="wide")
 
-    # ✅ Google login success via query params
+    # First check for Google login success before any other UI rendering
     if st.query_params.get("google_login_success") and not st.session_state.get("logged_in"):
         email = st.query_params.get("email", "user@example.com")
         st.session_state['logged_in'] = True
         st.session_state['username'] = email
         st.session_state['login_time'] = time.time()
+        st.session_state['google_login_processed'] = True  # New flag to track Google login
         st.experimental_set_query_params()  # Clear params after use
         st.rerun()
 
+    # Initialize session state variables if they don't exist
     if 'logged_in' not in st.session_state:
         st.session_state['logged_in'] = False
+    if 'google_login_processed' not in st.session_state:
+        st.session_state['google_login_processed'] = False
 
-    if not st.session_state.get("logged_in"):
+    # Show loading state during Google login processing
+    if st.session_state.get('google_login_processed') and not st.session_state.get('logged_in'):
+        with st.spinner("Completing login..."):
+            time.sleep(0.5)  # Short delay to ensure smooth transition
+        return  # Don't show any UI until login is complete
+
+    # Only show login/register UI if not logged in and not processing Google login
+    if not st.session_state.get("logged_in") and not st.session_state.get('google_login_processed'):
         choice = st.selectbox("Login / Register", ["Login", "Register"])
         if choice == "Login":
             login_page()
         else:
             registration_page()
-        return  # 🛑 Stop here if not logged in
+        return  # Stop here if not logged in
 
     # ✅ Show login badge briefly
     if st.session_state.get("logged_in") and st.session_state.get("username"):
@@ -164,7 +175,8 @@ def main():
 
     elif page == "Logout":
         st.session_state['logged_in'] = False
+        st.session_state['google_login_processed'] = False
         st.success("You have been logged out!")
 
 if __name__ == "__main__":
-    main()
+    main() 
