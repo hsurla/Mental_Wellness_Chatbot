@@ -56,7 +56,7 @@ def get_fun_activity():
             "trivia": get_trivia,
             "activity": get_activity
         }
-        choice = random.choice(list(options.keys()))  # Fixed: Removed extra parenthesis
+        choice = random.choice(list(options.keys()))
         st.session_state.current_activity = f"{choice.upper()}: {options[choice]()}"
     return st.session_state.current_activity
 
@@ -122,22 +122,19 @@ def main():
             st.markdown(f"**{'🧑 You' if sender == 'You' else '🤖 Bot'}:** {msg}  \n<sub>{time_sent}</sub>", 
                        unsafe_allow_html=True)
 
-        # Centered send button with keyboard enter support
-        col1, col2, col3 = st.columns([4,2,4])
-        with col2:
-            user_message = st.text_input("Type your message", key="chat_input", 
-                                       label_visibility="collapsed", 
-                                       on_change=lambda: st.session_state.update({"send_clicked": True}))
-            
-            if st.button("📤 Send", key="send_button") or st.session_state.get("send_clicked", False):
-                if user_message.strip():
-                    current_time = datetime.now().strftime("%H:%M")
-                    st.session_state.chat_history.append(("You", user_message, current_time))
-                    response, emotion, _ = chat_with_bot(st.session_state['username'], user_message)
-                    st.session_state.chat_history.append(("Bot", f"{response} (Mood: {emotion})", current_time))
-                    st.session_state.send_clicked = False
-                    st.session_state.chat_input = ""
-                    st.rerun()
+        # Reverted to original button style
+        user_message = st.text_input("Type your message", key="chat_input", 
+                                   label_visibility="collapsed")
+        
+        if st.button("📤 Send Message", use_container_width=True) or (user_message and st.session_state.get("enter_pressed")):
+            if user_message.strip():
+                current_time = datetime.now().strftime("%H:%M")
+                st.session_state.chat_history.append(("You", user_message, current_time))
+                response, emotion, _ = chat_with_bot(st.session_state['username'], user_message)
+                st.session_state.chat_history.append(("Bot", f"{response} (Mood: {emotion})", current_time))
+                st.session_state.chat_input = ""
+                st.session_state.enter_pressed = False
+                st.rerun()
 
     elif page == "Wellness":
         wellness_page()
@@ -147,7 +144,7 @@ def main():
         with col1:
             st.subheader("🎲 Activity Suggestion")
             st.info(get_fun_activity())
-            if st.button("🔀 Get New Activity"):
+            if st.button("🔀 Get Another Activity", key="new_activity"):
                 if 'current_activity' in st.session_state:
                     del st.session_state.current_activity
                 st.rerun()
@@ -155,7 +152,7 @@ def main():
         with col2:
             st.subheader("🥗 Healthy Snack")
             st.success(get_healthy_snack())
-            if st.button("🔀 Get New Snack", key="new_snack"):
+            if st.button("🔀 Get Another Snack", key="new_snack"):
                 if 'current_snack' in st.session_state:
                     del st.session_state.current_snack
                 st.rerun()
