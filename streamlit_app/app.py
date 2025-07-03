@@ -2,6 +2,7 @@ import streamlit as st
 from datetime import datetime
 import time
 import random
+import requests
 from streamlit_app.login import login_page
 from streamlit_app.register import registration_page
 from streamlit_app.chatbot import chat_with_bot
@@ -10,44 +11,68 @@ from database.database import get_chat_history
 from streamlit_app.wellness import wellness_page
 from streamlit_app.profile import profile_page
 
-# Added fun activities directly in the main file
+# API Functions
+def get_joke():
+    """Fetch a joke from JokeAPI"""
+    try:
+        response = requests.get("https://v2.jokeapi.dev/joke/Any?safe-mode")
+        if response.status_code == 200:
+            data = response.json()
+            if data["type"] == "twopart":
+                return f"{data['setup']}... {data['delivery']}"
+            return data["joke"]
+        return "Why don't scientists trust atoms? Because they make up everything!"
+    except:
+        return "Failed to fetch joke - here's one: What do you call a fake noodle? An impasta!"
+
+def get_trivia():
+    """Fetch trivia from OpenTriviaDB"""
+    try:
+        response = requests.get("https://opentdb.com/api.php?amount=1")
+        if response.status_code == 200:
+            data = response.json()
+            question = data["results"][0]["question"]
+            answer = data["results"][0]["correct_answer"]
+            return f"{question} (Answer: {answer})"
+        return "Bananas are berries, but strawberries aren't!"
+    except:
+        return "The Eiffel Tower grows 6 inches in summer due to thermal expansion"
+
+def get_activity():
+    """Fetch boredom buster from BoredAPI"""
+    try:
+        response = requests.get("https://www.boredapi.com/api/activity/")
+        if response.status_code == 200:
+            return response.json()["activity"]
+        return "Try a 5-minute yoga flow"
+    except:
+        return "Organize your phone photos"
+
 def get_fun_activity():
-    """Returns random fun activity (joke/trivia/boredom buster)"""
-    activities = {
-        "bored": [
-            "Try a 5-minute yoga flow",
-            "Doodle something abstract",
-            "Learn a TikTok dance",
-            "Organize your phone photos",
-            "Try a new recipe with ingredients you have"
-        ],
-        "trivia": [
-            "Bananas are berries, but strawberries aren't!",
-            "The shortest war in history was 38 minutes (Britain vs. Zanzibar, 1896)",
-            "A group of flamingos is called a 'flamboyance'",
-            "The Eiffel Tower grows 6 inches in summer due to thermal expansion"
-        ],
-        "joke": [
-            "Why don't scientists trust atoms? Because they make up everything!",
-            "What do you call fake spaghetti? An impasta!",
-            "Why did the scarecrow win an award? Because he was outstanding in his field!",
-            "How do you organize a space party? You planet!"
-        ]
-    }
-    category = random.choice(list(activities.keys()))
-    return f"💡 {random.choice(activities[category])}"
+    """Randomly select an API-based activity"""
+    if 'current_activity' not in st.session_state:
+        options = {
+            "joke": get_joke,
+            "trivia": get_trivia,
+            "activity": get_activity
+        }
+        choice = random.choice(list(options.keys()))  # Fixed: Removed extra parenthesis
+        st.session_state.current_activity = f"{choice.upper()}: {options[choice]()}"
+    return st.session_state.current_activity
 
 def get_healthy_snack():
     """Returns random healthy snack suggestion"""
-    snacks = [
-        "Apple slices with almond butter",
-        "Greek yogurt with berries",
-        "Handful of mixed nuts",
-        "Carrot sticks with hummus",
-        "Rice cakes with avocado",
-        "Hard-boiled eggs with sea salt"
-    ]
-    return random.choice(snacks)
+    if 'current_snack' not in st.session_state:
+        snacks = [
+            "Apple slices with almond butter",
+            "Greek yogurt with berries",
+            "Handful of mixed nuts",
+            "Carrot sticks with hummus",
+            "Rice cakes with avocado",
+            "Hard-boiled eggs with sea salt"
+        ]
+        st.session_state.current_snack = random.choice(snacks)
+    return st.session_state.current_snack
 
 def main():
     st.set_page_config(page_title="Mental Wellness Chatbot", layout="wide")
@@ -97,13 +122,22 @@ def main():
             st.markdown(f"**{'🧑 You' if sender == 'You' else '🤖 Bot'}:** {msg}  \n<sub>{time_sent}</sub>", 
                        unsafe_allow_html=True)
 
-        user_message = st.text_input("Type your message", key="chat_input", label_visibility="collapsed")
-        if st.button("📤 Send") and user_message.strip():
-            current_time = datetime.now().strftime("%H:%M")
-            st.session_state.chat_history.append(("You", user_message, current_time))
-            response, emotion, _ = chat_with_bot(st.session_state['username'], user_message)
-            st.session_state.chat_history.append(("Bot", f"{response} (Mood: {emotion})", current_time))
-            st.rerun()
+        # Centered send button with keyboard enter support
+        col1, col2, col3 = st.columns([4,2,4])
+        with col2:
+            user_message = st.text_input("Type your message", key="chat_input", 
+                                       label_visibility="collapsed", 
+                                       on_change=lambda: st.session_state.update({"send_clicked": True}))
+            
+            if st.button("📤 Send", key="send_button") or st.session_state.get("send_clicked", False):
+                if user_message.strip():
+                    current_time = datetime.now().strftime("%H:%M")
+                    st.session_state.chat_history.append(("You", user_message, current_time))
+                    response, emotion, _ = chat_with_bot(st.session_state['username'], user_message)
+                    st.session_state.chat_history.append(("Bot", f"{response} (Mood: {emotion})", current_time))
+                    st.session_state.send_clicked = False
+                    st.session_state.chat_input = ""
+                    st.rerun()
 
     elif page == "Wellness":
         wellness_page()
@@ -113,13 +147,17 @@ def main():
         with col1:
             st.subheader("🎲 Activity Suggestion")
             st.info(get_fun_activity())
-            if st.button("🔀 Get Another Activity"):
+            if st.button("🔀 Get New Activity"):
+                if 'current_activity' in st.session_state:
+                    del st.session_state.current_activity
                 st.rerun()
                 
         with col2:
             st.subheader("🥗 Healthy Snack")
             st.success(get_healthy_snack())
-            if st.button("🔀 Get Another Snack"):
+            if st.button("🔀 Get New Snack", key="new_snack"):
+                if 'current_snack' in st.session_state:
+                    del st.session_state.current_snack
                 st.rerun()
 
     elif page == "Chat History":
