@@ -29,7 +29,6 @@ def get_joke():
     except:
         return "Failed to fetch joke - here's one: What do you call a fake noodle? An impasta!"
 
-# ... [rest of your existing functions] ...
 
 def main():
     st.set_page_config(page_title="Mental Wellness Chatbot", layout="wide")
@@ -37,7 +36,6 @@ def main():
     # Get chatbot functions after all other imports are done
     chat_with_bot = get_chatbot_functions()
     
-    # ... [rest of your existing main() code] ...
 
     # Google login handling
     if st.query_params.get("google_login_success") and not st.session_state.get("logged_in"):
