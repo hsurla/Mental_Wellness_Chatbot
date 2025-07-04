@@ -2,6 +2,7 @@
 
 
 from database.database import log_chat, log_mood, flag_crisis
+import streamlit as st
 import nltk
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 nltk.download('punkt_tab')
@@ -9,7 +10,6 @@ nltk.download('vader_lexicon')
 from datetime import datetime
 import text2emotion as te
 import random
-<<<<<<< HEAD
 import requests
 from streamlit_app.login import login_page
 from streamlit_app.register import registration_page
@@ -18,9 +18,6 @@ from database.database import get_chat_history
 from streamlit_app.wellness import wellness_page
 from streamlit_app.profile import profile_page
 from streamlit_app.fun_support import get_fun_activity, get_healthy_snack
-=======
-import streamlit as st
->>>>>>> b148456a7d81ca4d629741fe66f2a1564351c7a4
 
 sia = SentimentIntensityAnalyzer()
 

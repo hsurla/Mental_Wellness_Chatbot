@@ -36,18 +36,6 @@ def main():
     
     # Get chatbot functions after all other imports are done
     chat_with_bot = get_chatbot_functions()
-    
-
-    # Google login handling
-    if st.query_params.get("google_login_success") and not st.session_state.get("logged_in"):
-        email = st.query_params.get("email", "user@example.com")
-        st.session_state.update({
-            'logged_in': True,
-            'username': email,
-            'login_time': time.time()
-        })
-        st.experimental_set_query_params()
-        st.rerun()
 
     if 'logged_in' not in st.session_state:
         st.session_state['logged_in'] = False
@@ -61,7 +49,7 @@ def main():
         return
 
     # Login badge
-    if st.session_state.get("logged_in") and time.time() - st.session_state.get("login_time", 0) < 3:
+    if st.session_state.get("show_login_badge"):
         st.markdown(
             f"""<div style='position:fixed; top:15px; right:20px; background:#def1de; 
                 padding:10px 16px; border-radius:12px; font-size:14px; color:green; z-index:1000;'>
@@ -69,6 +57,8 @@ def main():
             </div>""",
             unsafe_allow_html=True
         )
+        # Remove the badge flag after showing once
+        del st.session_state.show_login_badge
 
     page = sidebar()
 

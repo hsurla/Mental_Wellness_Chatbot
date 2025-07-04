@@ -12,7 +12,27 @@ CLIENT_ID ="639432204726-af4d4q5v8a82cs67uo33djmhdgqujsf1.apps.googleusercontent
 CLIENT_SECRET = "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"
 REDIRECT_URI = "http://localhost:8501"  # Or your deployed Streamlit URL
 
+def show_login_success():
+    """Show login success animation and redirect to chat page"""
+    st.balloons()
+    st.success("✅ Login successful!")
+
+    # Redirect using JavaScript
+    js_redirect = """
+    <script>
+        setTimeout(function() {
+            window.location.href = window.location.origin;
+        }, 1000);
+    </script>
+    """
+    st.markdown(js_redirect, unsafe_allow_html=True)
+
 def login_page():
+    # Check if already logged in
+    if st.session_state.get("logged_in"):
+        show_login_success()
+        return
+    
     code = st.query_params.get("code")
     if code:
         token_response = requests.post(
@@ -37,20 +57,19 @@ def login_page():
             if userinfo_response.status_code == 200:
                 user_info = userinfo_response.json()
                 email = user_info["email"]
-                st.success(f"✅ Logged in as: {email}")
                 st.session_state["username"] = email
                 st.session_state["logged_in"] = True
 
                 if not find_user(email):
                     add_user(email, "")  # Register Google user with blank password
 
+                
+                show_login_success()
                 return  # Skip showing the manual login form
             else:
                 st.error("❌ Failed to retrieve user info.")
-                return
         else:
             st.error("❌ Failed to get access token.")
-            return
 
     # Google Sign-In Button (if not logged in via redirect)
     st.markdown("### 🔐 Sign in with Google")
