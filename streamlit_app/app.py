@@ -9,6 +9,7 @@ from streamlit_app.sidebar import sidebar
 from database.database import get_chat_history
 from streamlit_app.wellness import wellness_page
 from streamlit_app.profile import profile_page
+from streamlit_app.fun_support import get_fun_activity, get_healthy_snack
 
 # Import chatbot functions after other dependencies are loaded
 def get_chatbot_functions():
@@ -29,7 +30,6 @@ def get_joke():
     except:
         return "Failed to fetch joke - here's one: What do you call a fake noodle? An impasta!"
 
-# ... [rest of your existing functions] ...
 
 def main():
     st.set_page_config(page_title="Mental Wellness Chatbot", layout="wide")
@@ -37,7 +37,6 @@ def main():
     # Get chatbot functions after all other imports are done
     chat_with_bot = get_chatbot_functions()
     
-    # ... [rest of your existing main() code] ...
 
     # Google login handling
     if st.query_params.get("google_login_success") and not st.session_state.get("logged_in"):
