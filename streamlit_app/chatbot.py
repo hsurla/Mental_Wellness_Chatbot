@@ -1,130 +1,152 @@
-from database.database import log_chat, log_mood, flag_crisis
-import nltk
-from nltk.sentiment.vader import SentimentIntensityAnalyzer
-nltk.download('punkt_tab')
-nltk.download('vader_lexicon')
+import streamlit as st
 from datetime import datetime
-import text2emotion as te
+import time
 import random
+import requests
+from streamlit_app.login import login_page
+from streamlit_app.register import registration_page
+from streamlit_app.sidebar import sidebar
+from database.database import get_chat_history
+from streamlit_app.wellness import wellness_page
+from streamlit_app.profile import profile_page
 
-# Initialize analyzer
-sia = SentimentIntensityAnalyzer()
+# Lazy import to prevent circular imports
+def get_chatbot():
+    from streamlit_app.chatbot import chat_with_bot
+    return chat_with_bot
 
-class ChatBot:
-    def __init__(self):
-        self.response_map = self._initialize_response_map()
-        self.tone_response_map = self._initialize_tone_response_map()
-        self.default_response_map = self._initialize_default_response_map()
+# API Functions
+def get_joke():
+    """Fetch a joke from JokeAPI"""
+    try:
+        response = requests.get("https://v2.jokeapi.dev/joke/Any?safe-mode")
+        if response.status_code == 200:
+            data = response.json()
+            if data["type"] == "twopart":
+                return f"{data['setup']}... {data['delivery']}"
+            return data["joke"]
+        return "Why don't scientists trust atoms? Because they make up everything!"
+    except:
+        return "Failed to fetch joke - here's one: What do you call a fake noodle? An impasta!"
+
+# ... [other API functions remain the same] ...
+
+def main():
+    st.set_page_config(page_title="Mental Wellness Chatbot", layout="wide")
+
+    # Initialize session state variables
+    if 'logged_in' not in st.session_state:
+        st.session_state.logged_in = False
+    if 'chat_history' not in st.session_state:
+        st.session_state.chat_history = []
+    if 'chat_input_value' not in st.session_state:
+        st.session_state.chat_input_value = ""
+
+    # Google login handling
+    if st.query_params.get("google_login_success") and not st.session_state.get("logged_in"):
+        email = st.query_params.get("email", "user@example.com")
+        st.session_state.update({
+            'logged_in': True,
+            'username': email,
+            'login_time': time.time()
+        })
+        st.experimental_set_query_params()
+        st.rerun()
+
+    if not st.session_state.get("logged_in"):
+        choice = st.selectbox("Login / Register", ["Login", "Register"])
+        if choice == "Login":
+            login_page()
+        else:
+            registration_page()
+        return
+
+    # Login badge
+    if st.session_state.get("logged_in") and time.time() - st.session_state.get("login_time", 0) < 3:
+        st.markdown(
+            f"""<div style='position:fixed; top:15px; right:20px; background:#def1de; 
+                padding:10px 16px; border-radius:12px; font-size:14px; color:green; z-index:1000;'>
+                ✅ Logged in as <b>{st.session_state['username']}</b>
+            </div>""",
+            unsafe_allow_html=True
+        )
+
+    page = sidebar()
+
+    if page == "Chatbot":
+        st.markdown("## 💬 Your Mental Wellness Chatbot")
         
-    def detect_emotion(self, user_message):
-        """Detects emotion from the user's message."""
-        emotion_scores = te.get_emotion(user_message)
+        # Display chat history
+        for sender, msg, *rest in st.session_state.chat_history:
+            time_sent = rest[0] if rest else "Unknown time"
+            st.markdown(f"**{'🧑 You' if sender == 'You' else '🤖 Bot'}:** {msg}  \n<sub>{time_sent}</sub>", 
+                       unsafe_allow_html=True)
 
-        if not emotion_scores or all(score == 0 for score in emotion_scores.values()):
-            return "neutral"
+        # Chat input with proper state management
+        def clear_chat_input():
+            """Callback to clear the input after sending"""
+            st.session_state.chat_input_value = ""
+            st.session_state.chat_input_key = str(time.time())  # Force widget reset
 
-        raw_emotion = max(emotion_scores, key=emotion_scores.get).lower()
+        # Create a unique key for the text input to force reset when cleared
+        if 'chat_input_key' not in st.session_state:
+            st.session_state.chat_input_key = "chat_input_default"
 
-        emotion_map = {
-            "happy": "happy",
-            "sad": "sad",
-            "angry": "angry",
-            "fear": "anxious",
-            "surprise": "neutral"
-        }
+        # The text input widget
+        user_message = st.text_input(
+            "Type your message",
+            value=st.session_state.chat_input_value,
+            key=st.session_state.chat_input_key,
+            label_visibility="collapsed",
+            on_change=clear_chat_input
+        )
 
-        return emotion_map.get(raw_emotion, "neutral")
+        # Update the session state with current input
+        st.session_state.chat_input_value = user_message
 
-    def detect_intent(self, user_message):
-        """Simple rule-based intent detection"""
-        msg = user_message.lower()
-        if any(word in msg for word in ["help", "advice", "suggest", "what should", "how can"]):
-            return "seeking advice"
-        elif any(word in msg for word in ["angry", "annoyed", "frustrated", "hate"]):
-            return "venting"
-        elif any(word in msg for word in ["thank you", "thanks", "grateful"]):
-            return "gratitude"
-        elif any(word in msg for word in ["happy", "excited", "joy"]):
-            return "sharing joy"
-        elif any(word in msg for word in ["hi", "hello", "hey"]):
-            return "greeting"
-        elif any(word in msg for word in ["alone", "tired", "done"]):
-            return "venting"
-        return "casual"
+        # Send button - centered
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            send_button = st.button("📤 Send Message", use_container_width=True)
 
-    def _initialize_response_map(self):
-        """Initialize the main response mapping"""
-        return {
-            ("sad", "venting"): ["I'm here for you. Want to talk more about it?"],
-            # ... [rest of your response mappings] ...
-        }
+        # Handle message sending
+        if send_button or st.session_state.get("enter_pressed", False):
+            if user_message.strip():
+                # Get chatbot function
+                chat_with_bot = get_chatbot()
+                
+                current_time = datetime.now().strftime("%H:%M")
+                st.session_state.chat_history.append(("You", user_message, current_time))
+                response, emotion, _ = chat_with_bot(st.session_state['username'], user_message)
+                st.session_state.chat_history.append(("Bot", f"{response} (Mood: {emotion})", current_time))
+                
+                # Reset flags and force rerun
+                st.session_state.enter_pressed = False
+                st.session_state.chat_input_value = ""
+                st.rerun()
 
-    def _initialize_tone_response_map(self):
-        """Initialize tone-specific responses"""
-        return {
-            "calm": {
-                "sad": ["I'm here with you. Let's take a deep breath together."],
-                # ... [rest of tone mappings] ...
-            },
-            # ... [other tones] ...
-        }
+    elif page == "Wellness":
+        wellness_page()
+        st.markdown("---")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.subheader("🎲 Activity Suggestion")
+            st.info(get_fun_activity())
+            if st.button("🔀 Get Another Activity", key="new_activity"):
+                if 'current_activity' in st.session_state:
+                    del st.session_state.current_activity
+                st.rerun()
+                
+        with col2:
+            st.subheader("🥗 Healthy Snack")
+            st.success(get_healthy_snack())
+            if st.button("🔀 Get Another Snack", key="new_snack"):
+                if 'current_snack' in st.session_state:
+                    del st.session_state.current_snack
+                st.rerun()
 
-    def _initialize_default_response_map(self):
-        """Initialize default responses"""
-        return {
-            "sad": ["I'm here for you. Take your time."],
-            # ... [rest of default mappings] ...
-        }
+    # ... [rest of your page handlers remain the same] ...
 
-    def chitchat_response(self, user_message):
-        """Handle simple chitchat interactions"""
-        msg = user_message.lower().strip()
-        chitchat_map = {
-            "hi": "Hi there! 😊",
-            # ... [rest of your chitchat mappings] ...
-        }
-        return chitchat_map.get(msg)
-
-    def generate_response(self, username, user_message):
-        """Main method to generate bot response"""
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-        # Check for chitchat first
-        chitchat = self.chitchat_response(user_message)
-        if chitchat:
-            emotion = self.detect_emotion(user_message)
-            self._log_interaction(username, user_message, chitchat, emotion, "chitchat")
-            return chitchat, "neutral", timestamp
-
-        # Process emotion and intent
-        emotion = self.detect_emotion(user_message)
-        intent = self.detect_intent(user_message)
-
-        # Get appropriate response
-        responses = self.response_map.get((emotion, intent))
-        if not responses:
-            tone = "calm"  # Default tone
-            tone_fallbacks = self.tone_response_map.get(tone, self.default_response_map)
-            responses = tone_fallbacks.get(emotion, self.default_response_map.get(emotion, 
-                ["I'm here to listen. Take your time."]))
-
-        response = random.choice(responses)
-        self._log_interaction(username, user_message, response, emotion, intent)
-        return response, emotion, timestamp
-
-    def _log_interaction(self, username, user_message, response, emotion, intent):
-        """Handle all logging operations"""
-        log_chat(username, user_message, response, emotion, intent)
-        if emotion in ['sad', 'angry', 'anxious']:
-            log_mood(username, emotion)
-        if emotion == 'anxious':
-            flag_crisis(username, "Detected signs of anxiety")
-        if any(keyword in user_message.lower() for keyword in ["hurt myself", "want to die"]):
-            flag_crisis(username, "Detected self-harm message")
-
-# Create a singleton instance
-chatbot_instance = ChatBot()
-
-def chat_with_bot(username, user_message):
-    """Public interface for the chatbot"""
-    return chatbot_instance.generate_response(username, user_message)
+if __name__ == "__main__":
+    main()
