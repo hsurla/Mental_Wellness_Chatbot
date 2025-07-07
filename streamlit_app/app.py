@@ -61,7 +61,7 @@ def main():
         del st.session_state.show_login_badge
 
     page = sidebar()
-
+    
     if page == "Chatbot":
         st.markdown("## 💬 Your Mental Wellness Chatbot")
         
@@ -73,20 +73,20 @@ def main():
             st.markdown(f"**{'🧑 You' if sender == 'You' else '🤖 Bot'}:** {msg}  \n<sub>{time_sent}</sub>", 
                        unsafe_allow_html=True)
 
-        # Reverted to original button style
-    def handle_user_message():
-
+        # Define message handler (must be inside the if block but at correct indent)
+        def handle_user_message():
             user_message = st.session_state.chat_input.strip()
             if user_message:
-                 current_time = datetime.now().strftime("%H:%M")
-                 st.session_state.chat_history.append(("You", user_message, current_time))
-                 response, emotion, _ = chat_with_bot(st.session_state['username'], user_message)
-                 st.session_state.chat_history.append(("Bot", f"{response} (Mood: {emotion})", current_time))
-                 st.session_state.chat_input = ""  # ✅ safe here because we're inside the callback
-                 st.rerun()
+                current_time = datetime.now().strftime("%H:%M")
+                st.session_state.chat_history.append(("You", user_message, current_time))
+                response, emotion, _ = chat_with_bot(st.session_state['username'], user_message)
+                st.session_state.chat_history.append(("Bot", f"{response} (Mood: {emotion})", current_time))
+                st.session_state.chat_input = ""
+                st.rerun()
 
-# Render input box with callback
-                 st.text_input("Type your message", key="chat_input", label_visibility="collapsed", on_change=handle_user_message)
+        # Render input with callback
+        st.text_input("Type your message", key="chat_input", label_visibility="collapsed", on_change=handle_user_message)
+
 
     elif page == "Wellness":
         wellness_page()
