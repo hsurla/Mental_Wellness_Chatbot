@@ -18,7 +18,6 @@ def get_chatbot_functions():
 
 # API Functions (moved to top level to avoid circular imports)
 def get_joke():
-    """Fetch a joke from JokeAPI"""
     try:
         response = requests.get("https://v2.jokeapi.dev/joke/Any?safe-mode")
         if response.status_code == 200:
@@ -30,11 +29,9 @@ def get_joke():
     except:
         return "Failed to fetch joke - here's one: What do you call a fake noodle? An impasta!"
 
-
 def main():
     st.set_page_config(page_title="Mental Wellness Chatbot", layout="wide")
-    
-    # Get chatbot functions after all other imports are done
+
     chat_with_bot = get_chatbot_functions()
 
     if 'logged_in' not in st.session_state:
@@ -57,41 +54,40 @@ def main():
             </div>""",
             unsafe_allow_html=True
         )
-        # Remove the badge flag after showing once
         del st.session_state.show_login_badge
 
     page = sidebar()
-    
+
     if page == "Chatbot":
         st.markdown("## 💬 Your Mental Wellness Chatbot")
-        
+
         if "chat_history" not in st.session_state:
             st.session_state.chat_history = []
 
+        # Display previous messages
         for sender, msg, *rest in st.session_state.chat_history:
             time_sent = rest[0] if rest else "Unknown time"
             st.markdown(f"**{'🧑 You' if sender == 'You' else '🤖 Bot'}:** {msg}  \n<sub>{time_sent}</sub>", 
-                       unsafe_allow_html=True)
+                        unsafe_allow_html=True)
 
-        # Define message handler (must be inside the if block but at correct indent)
-        def handle_user_message():
-            user_message = st.session_state.chat_input.strip()
-            if user_message:
-                current_time = datetime.now().strftime("%H:%M")
-                st.session_state.chat_history.append(("You", user_message, current_time))
-                response, emotion, _ = chat_with_bot(st.session_state['username'], user_message)
-                st.session_state.chat_history.append(("Bot", f"{response} (Mood: {emotion})", current_time))
-                st.session_state.chat_input = ""
-                st.rerun()
+        # Input box
+        user_message = st.text_input("Type your message", key="chat_input", label_visibility="collapsed")
 
-        # Render input with callback
-        st.text_input("Type your message", key="chat_input", label_visibility="collapsed", on_change=handle_user_message)
+        # Send button
+        send_clicked = st.button("📤 Send", use_container_width=True)
 
+        # Handle input via Enter or Send button
+        if (user_message and send_clicked) or (user_message and not send_clicked):
+            current_time = datetime.now().strftime("%H:%M")
+            st.session_state.chat_history.append(("You", user_message.strip(), current_time))
+            response, emotion, _ = chat_with_bot(st.session_state['username'], user_message)
+            st.session_state.chat_history.append(("Bot", f"{response} (Mood: {emotion})", current_time))
+            st.session_state.chat_input = ""  # Clear input
+            st.rerun()
 
     elif page == "Wellness":
         wellness_page()
         st.markdown("---")
-        
         col1, col2 = st.columns(2)
         with col1:
             st.subheader("🎲 Activity Suggestion")
@@ -100,7 +96,6 @@ def main():
                 if 'current_activity' in st.session_state:
                     del st.session_state.current_activity
                 st.rerun()
-                
         with col2:
             st.subheader("🥗 Healthy Snack")
             st.success(get_healthy_snack())
