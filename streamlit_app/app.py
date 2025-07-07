@@ -16,7 +16,6 @@ def get_chatbot_functions():
     from streamlit_app.chatbot import chat_with_bot
     return chat_with_bot
 
-# API Functions (moved to top level to avoid circular imports)
 def get_joke():
     try:
         response = requests.get("https://v2.jokeapi.dev/joke/Any?safe-mode")
@@ -58,33 +57,32 @@ def main():
 
     page = sidebar()
 
+    # ---------------------------- CHATBOT PAGE ---------------------------- #
     if page == "Chatbot":
         st.markdown("## 💬 Your Mental Wellness Chatbot")
 
         if "chat_history" not in st.session_state:
             st.session_state.chat_history = []
 
-        # Display previous messages
+        # Display previous chat
         for sender, msg, *rest in st.session_state.chat_history:
             time_sent = rest[0] if rest else "Unknown time"
             st.markdown(f"**{'🧑 You' if sender == 'You' else '🤖 Bot'}:** {msg}  \n<sub>{time_sent}</sub>", 
                         unsafe_allow_html=True)
 
-        # Input box
-        user_message = st.text_input("Type your message", key="chat_input", label_visibility="collapsed")
-
-        # Send button
+        # Input box (captured before button)
+        user_message = st.text_input("Type your message", value="", key="chat_input", label_visibility="collapsed")
         send_clicked = st.button("📤 Send", use_container_width=True)
 
-        # Handle input via Enter or Send button
-        if (user_message and send_clicked) or (user_message and not send_clicked):
+        # If user types and hits enter, or clicks Send
+        if user_message.strip() and send_clicked:
             current_time = datetime.now().strftime("%H:%M")
             st.session_state.chat_history.append(("You", user_message.strip(), current_time))
             response, emotion, _ = chat_with_bot(st.session_state['username'], user_message)
             st.session_state.chat_history.append(("Bot", f"{response} (Mood: {emotion})", current_time))
-            st.session_state.chat_input = ""  # Clear input
             st.rerun()
 
+    # ---------------------------- WELLNESS PAGE ---------------------------- #
     elif page == "Wellness":
         wellness_page()
         st.markdown("---")
@@ -104,6 +102,7 @@ def main():
                     del st.session_state.current_snack
                 st.rerun()
 
+    # ---------------------------- CHAT HISTORY ---------------------------- #
     elif page == "Chat History":
         st.title("🕒 Chat History")
         if chat_logs := get_chat_history(st.session_state['username']):
@@ -117,17 +116,20 @@ def main():
         else:
             st.info("No chat history yet")
 
+    # ---------------------------- PROFILE ---------------------------- #
     elif page == "Profile":
         profile_page(st.session_state["username"])
 
+    # ---------------------------- JOURNAL ---------------------------- #
     elif page == "Journal":
         st.title("📔 Journal")
         journal_text = st.text_area("New Entry", placeholder="Write your thoughts...")
         if st.button("Save Entry") and journal_text.strip():
-            # Add your journal saving logic here
+            # Save to your DB or local file
             st.success("Entry saved!")
             st.rerun()
 
+    # ---------------------------- LOGOUT ---------------------------- #
     elif page == "Logout":
         st.session_state.clear()
         st.success("Logged out successfully")
