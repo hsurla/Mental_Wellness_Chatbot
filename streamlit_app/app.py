@@ -74,7 +74,7 @@ def main():
                        unsafe_allow_html=True)
 
         # Reverted to original button style
-        def handle_user_message():
+    def handle_user_message():
 
             user_message = st.session_state.chat_input.strip()
             if user_message:
