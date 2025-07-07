@@ -33,12 +33,20 @@ def get_joke():
 
 def main():
     st.set_page_config(page_title="Mental Wellness Chatbot", layout="wide")
+    
+    # Get chatbot functions after all other imports are done
     chat_with_bot = get_chatbot_functions()
 
+    if 'logged_in' not in st.session_state:
+        st.session_state['logged_in'] = False
+
     if not st.session_state.get("logged_in"):
-        from streamlit_app.login import login_page
-        login_page()
-        return  # Don't show app unless logged in
+        choice = st.selectbox("Login / Register", ["Login", "Register"])
+        if choice == "Login":
+            login_page()
+        else:
+            registration_page()
+        return
 
     # Login badge
     if st.session_state.get("show_login_badge"):
@@ -49,6 +57,7 @@ def main():
             </div>""",
             unsafe_allow_html=True
         )
+        # Remove the badge flag after showing once
         del st.session_state.show_login_badge
 
     page = sidebar()
