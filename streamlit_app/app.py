@@ -74,18 +74,20 @@ def main():
                        unsafe_allow_html=True)
 
         # Reverted to original button style
-        user_message = st.text_input("Type your message", key="chat_input", 
-                                   label_visibility="collapsed")
-        
-        if st.button("📤 Send Message", use_container_width=True) or (user_message and st.session_state.get("enter_pressed")):
-            if user_message.strip():
-                current_time = datetime.now().strftime("%H:%M")
-                st.session_state.chat_history.append(("You", user_message, current_time))
-                response, emotion, _ = chat_with_bot(st.session_state['username'], user_message)
-                st.session_state.chat_history.append(("Bot", f"{response} (Mood: {emotion})", current_time))
-                st.session_state.chat_input = ""
-                st.session_state.enter_pressed = False
-                st.rerun()
+        def handle_user_message():
+
+            user_message = st.session_state.chat_input.strip()
+            if user_message:
+                 current_time = datetime.now().strftime("%H:%M")
+                 st.session_state.chat_history.append(("You", user_message, current_time))
+                 response, emotion, _ = chat_with_bot(st.session_state['username'], user_message)
+                 st.session_state.chat_history.append(("Bot", f"{response} (Mood: {emotion})", current_time))
+                 st.session_state.chat_input = ""  # ✅ safe here because we're inside the callback
+                 st.rerun()
+
+# Render input box with callback
+st.text_input("Type your message", key="chat_input", label_visibility="collapsed", on_change=handle_user_message)
+
 
     elif page == "Wellness":
         wellness_page()
