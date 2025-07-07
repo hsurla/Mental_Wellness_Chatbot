@@ -77,13 +77,8 @@ def main():
 
         st.markdown("---")
 
-        # Voice input
-        """with st.expander("🎙️ Try Voice Input"):
-            audio_bytes = audio_recorder(pause_threshold=1.5)
-            if audio_bytes:
-                st.audio(audio_bytes, format="audio/wav")
-                st.info("Voice input received. (You can add speech-to-text logic here.)")"""
 
+        
         # Text input via form
         with st.form("chat_form", clear_on_submit=True):
             user_message = st.text_input("Type your message", key="chat_input", label_visibility="collapsed")
