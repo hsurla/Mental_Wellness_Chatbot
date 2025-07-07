@@ -11,9 +11,6 @@ from streamlit_app.wellness import wellness_page
 from streamlit_app.profile import profile_page
 from streamlit_app.fun_support import get_fun_activity, get_healthy_snack
 
-# Optional: For voice input
-#from streamlit_audio_recorder import audio_recorder
-
 def get_chatbot_functions():
     from streamlit_app.chatbot import chat_with_bot
     return chat_with_bot
@@ -77,26 +74,87 @@ def main():
 
         st.markdown("---")
 
-
-        
-        # Text input via form
+        # Chat input form
         with st.form("chat_form", clear_on_submit=True):
             user_message = st.text_input("Type your message", key="chat_input", label_visibility="collapsed")
-            send_clicked = st.form_submit_button("📤 Send")
+            send_clicked = st.form_submit_button("📤 Send", use_container_width=True)
 
-        # Process message
+            # Enlarge button styling
+            st.markdown("""
+                <style>
+                button[kind="primary"] {
+                    padding-top: 0.75rem !important;
+                    padding-bottom: 0.75rem !important;
+                    font-size: 1.1rem !important;
+                    border-radius: 8px !important;
+                }
+                </style>
+            """, unsafe_allow_html=True)
+
+        # If user sends message
         if send_clicked and user_message.strip():
             current_time = datetime.now().strftime("%H:%M")
             st.session_state.chat_history.append(("You", user_message.strip(), current_time))
 
-            # Typing animation (simulated with spinner)
-            with st.spinner("Bot is thinking..."):
+            # Typing animation using HTML/CSS
+            with st.empty():
+                typing_placeholder = st.empty()
+                typing_placeholder.markdown("""
+                    <style>
+                    .typing-dots {
+                        display: inline-block;
+                        position: relative;
+                        width: 80px;
+                        height: 24px;
+                    }
+                    .typing-dots div {
+                        position: absolute;
+                        top: 0;
+                        width: 16px;
+                        height: 16px;
+                        border-radius: 50%;
+                        background: #aaa;
+                        animation-timing-function: cubic-bezier(0, 1, 1, 0);
+                    }
+                    .typing-dots div:nth-child(1) {
+                        left: 8px;
+                        animation: dots1 0.6s infinite;
+                    }
+                    .typing-dots div:nth-child(2) {
+                        left: 32px;
+                        animation: dots2 0.6s infinite;
+                    }
+                    .typing-dots div:nth-child(3) {
+                        left: 56px;
+                        animation: dots3 0.6s infinite;
+                    }
+                    @keyframes dots1 {
+                        0% { transform: scale(0); }
+                        100% { transform: scale(1); }
+                    }
+                    @keyframes dots2 {
+                        0% { transform: scale(0); }
+                        50% { transform: scale(1); }
+                        100% { transform: scale(0); }
+                    }
+                    @keyframes dots3 {
+                        0% { transform: scale(1); }
+                        100% { transform: scale(0); }
+                    }
+                    </style>
+                    <div class="typing-dots">
+                        <div></div><div></div><div></div>
+                    </div>
+                """, unsafe_allow_html=True)
+
+                time.sleep(1.5)  # Simulate typing delay
                 response, emotion, _ = chat_with_bot(st.session_state['username'], user_message)
-                time.sleep(1)  # Simulate thinking time
+                typing_placeholder.empty()
+
                 st.session_state.chat_history.append(("Bot", f"{response} (Mood: {emotion})", current_time))
                 st.rerun()
 
-        # Scroll to bottom after message
+        # Scroll to bottom
         st.markdown(
             """<script>
             var chatDiv = window.parent.document.querySelector('section.main');
