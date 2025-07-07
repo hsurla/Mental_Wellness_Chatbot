@@ -12,7 +12,7 @@ from streamlit_app.profile import profile_page
 from streamlit_app.fun_support import get_fun_activity, get_healthy_snack
 
 # Optional: For voice input
-from streamlit_audio_recorder import audio_recorder
+#from streamlit_audio_recorder import audio_recorder
 
 def get_chatbot_functions():
     from streamlit_app.chatbot import chat_with_bot
