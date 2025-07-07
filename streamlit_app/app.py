@@ -1,8 +1,8 @@
 import streamlit as st
 from datetime import datetime
 import time
-import random
 import requests
+import random
 from streamlit_app.login import login_page
 from streamlit_app.register import registration_page
 from streamlit_app.sidebar import sidebar
@@ -11,7 +11,9 @@ from streamlit_app.wellness import wellness_page
 from streamlit_app.profile import profile_page
 from streamlit_app.fun_support import get_fun_activity, get_healthy_snack
 
-# Import chatbot functions after other dependencies are loaded
+# Optional: For voice input
+from streamlit_audio_recorder import audio_recorder
+
 def get_chatbot_functions():
     from streamlit_app.chatbot import chat_with_bot
     return chat_with_bot
@@ -57,32 +59,58 @@ def main():
 
     page = sidebar()
 
-    # ---------------------------- CHATBOT PAGE ---------------------------- #
+    # ---------------------- CHATBOT ----------------------
     if page == "Chatbot":
         st.markdown("## 💬 Your Mental Wellness Chatbot")
 
         if "chat_history" not in st.session_state:
             st.session_state.chat_history = []
 
-        # Display previous chat
+        user_emoji = "🧑"
+        bot_emoji = "🤖"
+
+        # Show message history
         for sender, msg, *rest in st.session_state.chat_history:
             time_sent = rest[0] if rest else "Unknown time"
-            st.markdown(f"**{'🧑 You' if sender == 'You' else '🤖 Bot'}:** {msg}  \n<sub>{time_sent}</sub>", 
-                        unsafe_allow_html=True)
+            prefix = user_emoji if sender == "You" else bot_emoji
+            st.markdown(f"**{prefix} {sender}:** {msg}  \n<sub>{time_sent}</sub>", unsafe_allow_html=True)
 
-        # Input box (captured before button)
-        user_message = st.text_input("Type your message", value="", key="chat_input", label_visibility="collapsed")
-        send_clicked = st.button("📤 Send", use_container_width=True)
+        st.markdown("---")
 
-        # If user types and hits enter, or clicks Send
-        if user_message.strip() and send_clicked:
+        # Voice input
+        with st.expander("🎙️ Try Voice Input"):
+            audio_bytes = audio_recorder(pause_threshold=1.5)
+            if audio_bytes:
+                st.audio(audio_bytes, format="audio/wav")
+                st.info("Voice input received. (You can add speech-to-text logic here.)")
+
+        # Text input via form
+        with st.form("chat_form", clear_on_submit=True):
+            user_message = st.text_input("Type your message", key="chat_input", label_visibility="collapsed")
+            send_clicked = st.form_submit_button("📤 Send")
+
+        # Process message
+        if send_clicked and user_message.strip():
             current_time = datetime.now().strftime("%H:%M")
             st.session_state.chat_history.append(("You", user_message.strip(), current_time))
-            response, emotion, _ = chat_with_bot(st.session_state['username'], user_message)
-            st.session_state.chat_history.append(("Bot", f"{response} (Mood: {emotion})", current_time))
-            st.rerun()
 
-    # ---------------------------- WELLNESS PAGE ---------------------------- #
+            # Typing animation (simulated with spinner)
+            with st.spinner("Bot is thinking..."):
+                response, emotion, _ = chat_with_bot(st.session_state['username'], user_message)
+                time.sleep(1)  # Simulate thinking time
+                st.session_state.chat_history.append(("Bot", f"{response} (Mood: {emotion})", current_time))
+                st.rerun()
+
+        # Scroll to bottom after message
+        st.markdown(
+            """<script>
+            var chatDiv = window.parent.document.querySelector('section.main');
+            if (chatDiv) chatDiv.scrollTop = chatDiv.scrollHeight;
+            </script>""",
+            unsafe_allow_html=True
+        )
+
+    # ---------------------- WELLNESS ----------------------
     elif page == "Wellness":
         wellness_page()
         st.markdown("---")
@@ -102,7 +130,7 @@ def main():
                     del st.session_state.current_snack
                 st.rerun()
 
-    # ---------------------------- CHAT HISTORY ---------------------------- #
+    # ---------------------- CHAT HISTORY ----------------------
     elif page == "Chat History":
         st.title("🕒 Chat History")
         if chat_logs := get_chat_history(st.session_state['username']):
@@ -116,20 +144,19 @@ def main():
         else:
             st.info("No chat history yet")
 
-    # ---------------------------- PROFILE ---------------------------- #
+    # ---------------------- PROFILE ----------------------
     elif page == "Profile":
         profile_page(st.session_state["username"])
 
-    # ---------------------------- JOURNAL ---------------------------- #
+    # ---------------------- JOURNAL ----------------------
     elif page == "Journal":
         st.title("📔 Journal")
         journal_text = st.text_area("New Entry", placeholder="Write your thoughts...")
         if st.button("Save Entry") and journal_text.strip():
-            # Save to your DB or local file
             st.success("Entry saved!")
             st.rerun()
 
-    # ---------------------------- LOGOUT ---------------------------- #
+    # ---------------------- LOGOUT ----------------------
     elif page == "Logout":
         st.session_state.clear()
         st.success("Logged out successfully")
