@@ -33,20 +33,22 @@ def get_joke():
 
 def main():
     st.set_page_config(page_title="Mental Wellness Chatbot", layout="wide")
-    
-    # Get chatbot functions after all other imports are done
+
     chat_with_bot = get_chatbot_functions()
 
-    if 'logged_in' not in st.session_state:
-        st.session_state['logged_in'] = False
-
+    # Handle login
     if not st.session_state.get("logged_in"):
-        choice = st.selectbox("Login / Register", ["Login", "Register"])
-        if choice == "Login":
-            login_page()
+        st.title("Welcome to Mental Wellness Chatbot")
+        login_choice = st.radio("Login or Register", ["Login", "Register"], horizontal=True)
+
+        if login_choice == "Login":
+            login_page()  # Should set st.session_state['logged_in'] = True after successful login
         else:
             registration_page()
-        return
+        return  # Don't render rest of app yet
+
+    # Only runs after login
+    st.sidebar.success(f"Logged in as {st.session_state['username']}")
 
     # Login badge
     if st.session_state.get("show_login_badge"):
