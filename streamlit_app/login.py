@@ -4,6 +4,8 @@ from streamlit_javascript import st_javascript
 import requests
 
 CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID"  # 🔁 Replace this with your actual Google client ID
+REDIRECT_URI = "http://localhost:8501"  # Replace with your actual redirect URI
+
 
 def login_page():
     st.markdown("## 🔐 Login with Google")
