@@ -1,75 +1,65 @@
-# streamlit_app/login.py
-
 import streamlit as st
-import requests
-import bcrypt
-from urllib.parse import urlencode
 from streamlit.components.v1 import html
-from database.database import find_user, add_user
+from streamlit_javascript import st_javascript
+import requests
 
-# Google OAuth2 credentials
-CLIENT_ID ="639432204726-af4d4q5v8a82cs67uo33djmhdgqujsf1.apps.googleusercontent.com"
-CLIENT_SECRET = "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"
-REDIRECT_URI = "http://localhost:8501"  # Or your deployed Streamlit URL
-
-def show_login_success():
-    """Show login success animation and redirect to chat page"""
-    st.balloons()
-    st.success("✅ Login successful!")
-
-    # Redirect using JavaScript
-    js_redirect = """
-    <script>
-        setTimeout(function() {
-            window.location.href = window.location.origin;
-        }, 1000);
-    </script>
-    """
-    st.markdown(js_redirect, unsafe_allow_html=True)
+CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID"  # 🔁 Replace this with your actual Google client ID
 
 def login_page():
-    # Check if already logged in
-    if st.session_state.get("logged_in"):
-        show_login_success()
-        return
-    
-    code = st.query_params.get("code")
-    if code:
-        token_response = requests.post(
-            "https://oauth2.googleapis.com/token",
-            data={
-                "code": code,
-                "client_id": CLIENT_ID,
-                "client_secret": CLIENT_SECRET,
-                "redirect_uri": REDIRECT_URI,
-                "grant_type": "authorization_code"
-            }
-        )
-        if token_response.status_code == 200:
-            tokens = token_response.json()
-            access_token = tokens.get("access_token")
+    st.markdown("## 🔐 Login with Google")
+    st.write("Please sign in to access your Mental Wellness Chatbot.")
 
-            userinfo_response = requests.get(
-                "https://www.googleapis.com/oauth2/v2/userinfo",
-                headers={"Authorization": f"Bearer {access_token}"}
-            )
+    # HTML + JS for Google popup login
+    html_code = f"""
+    <div id="g_id_onload"
+         data-client_id="{CLIENT_ID}"
+         data-context="signin"
+         data-ux_mode="popup"
+         data-callback="handleCredentialResponse"
+         data-auto_prompt="false">
+    </div>
+    <div class="g_id_signin"
+         data-type="standard"
+         data-shape="rectangular"
+         data-theme="outline"
+         data-text="sign_in_with"
+         data-size="large"
+         data-logo_alignment="left">
+    </div>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script>
+        function handleCredentialResponse(response) {{
+            const token = response.credential;
+            const iframe = parent.document.querySelector('iframe[title="streamlit_app"]');
+            iframe.contentWindow.postMessage({{ type: "credential", token: token }}, "*");
+        }}
+    </script>
+    """
+    html(html_code, height=300)
 
-            if userinfo_response.status_code == 200:
-                user_info = userinfo_response.json()
-                email = user_info["email"]
-                st.session_state["username"] = email
-                st.session_state["logged_in"] = True
+    # JavaScript listener
+    result = st_javascript("""
+    window.token = null;
+    window.addEventListener("message", (event) => {
+        if (event.data.type === "credential") {
+            window.token = event.data.token;
+        }
+    });
+    window.token;
+    """)
 
-                if not find_user(email):
-                    add_user(email, "")  # Register Google user with blank password
-
-                
-                show_login_success()
-                return  # Skip showing the manual login form
-            else:
-                st.error("❌ Failed to retrieve user info.")
+    # Token received, verify it with Google
+    if result:
+        response = requests.get(f"https://oauth2.googleapis.com/tokeninfo?id_token={result}")
+        if response.status_code == 200:
+            info = response.json()
+            st.session_state["username"] = info["email"]
+            st.session_state["logged_in"] = True
+            st.session_state["show_login_badge"] = True
+            st.success(f"✅ Logged in as {info['email']}")
+            st.rerun()
         else:
-            st.error("❌ Failed to get access token.")
+            st.error("❌ Invalid Google token. Please try again.")
 
     # Google Sign-In Button (if not logged in via redirect)
     st.markdown("### 🔐 Sign in with Google")
