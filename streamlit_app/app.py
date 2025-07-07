@@ -86,8 +86,7 @@ def main():
                  st.rerun()
 
 # Render input box with callback
-                 st.text_input("Type your message", key="chat_input", label_visibility="collapsed", on_change=handle_user_message)
-
+    st.text_input("Type your message", key="chat_input", label_visibility="collapsed", on_change=handle_user_message)
 
     elif page == "Wellness":
         wellness_page()
