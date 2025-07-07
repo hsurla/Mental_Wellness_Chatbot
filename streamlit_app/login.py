@@ -1,6 +1,7 @@
 import streamlit as st
 from streamlit.components.v1 import html
 from streamlit_javascript import st_javascript
+from urllib.parse import urlencode
 import requests
 
 CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID"  # 🔁 Replace this with your actual Google client ID
