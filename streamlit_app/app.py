@@ -71,9 +71,7 @@ def main():
             time_sent = rest[0] if rest else "Unknown time"
             prefix = user_emoji if sender == "You" else bot_emoji
             st.markdown(f"**{prefix} {sender}:** {msg}  \n<sub>{time_sent}</sub>", unsafe_allow_html=True)
-
-        st.markdown("---")
-
+            
         # Chat input form
         with st.form("chat_form", clear_on_submit=True):
             user_message = st.text_input("Type your message", key="chat_input", label_visibility="collapsed")
