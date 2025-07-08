@@ -3,6 +3,8 @@ from datetime import datetime
 import time
 import requests
 import random
+import os
+from streamlit_oauth import OAuth2Component
 from streamlit_app.login import login_page
 from streamlit_app.register import registration_page
 from streamlit_app.sidebar import sidebar
@@ -10,6 +12,21 @@ from database.database import get_chat_history
 from streamlit_app.wellness import wellness_page
 from streamlit_app.profile import profile_page
 from streamlit_app.fun_support import get_fun_activity, get_healthy_snack
+
+# OAuth Configuration (Google Login)
+os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"  # Allow HTTP for local testing
+CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID"
+CLIENT_SECRET = "YOUR_GOOGLE_CLIENT_SECRET"
+REDIRECT_URI = "http://localhost:8501"
+
+oauth2 = OAuth2Component(
+    client_id=CLIENT_ID,
+    client_secret=CLIENT_SECRET,
+    authorize_endpoint="https://accounts.google.com/o/oauth2/v2/auth",
+    token_endpoint="https://oauth2.googleapis.com/token",
+    redirect_uri=REDIRECT_URI,
+    scope=["openid", "email", "profile"],
+)
 
 def get_chatbot_functions():
     from streamlit_app.chatbot import chat_with_bot
@@ -29,21 +46,25 @@ def get_joke():
 
 def main():
     st.set_page_config(page_title="Mental Wellness Chatbot", layout="wide")
-
     chat_with_bot = get_chatbot_functions()
 
     if 'logged_in' not in st.session_state:
         st.session_state['logged_in'] = False
 
-    if not st.session_state.get("logged_in"):
-        choice = st.selectbox("Login / Register", ["Login", "Register"])
-        if choice == "Login":
-            login_page()
-        else:
-            registration_page()
+    if not st.session_state['logged_in']:
+        st.title("🔐 Login with Google")
+        authorization_url = oauth2.get_authorization_url()
+        st.markdown(f"[Click here to login with Google]({authorization_url})")
+
+        token = oauth2.get_access_token()
+        if token:
+            user_info = oauth2.get_user_info(token)
+            st.session_state['username'] = user_info.get("email", "Guest")
+            st.session_state['logged_in'] = True
+            st.session_state['show_login_badge'] = True
+            st.experimental_rerun()
         return
 
-    # Login badge
     if st.session_state.get("show_login_badge"):
         st.markdown(
             f"""<div style='position:fixed; top:15px; right:20px; background:#def1de; 
@@ -56,45 +77,38 @@ def main():
 
     page = sidebar()
 
-    # ---------------------- CHATBOT ----------------------
     if page == "Chatbot":
         st.markdown("## 💬 Your Mental Wellness Chatbot")
-
         if "chat_history" not in st.session_state:
             st.session_state.chat_history = []
 
         user_emoji = "🧑"
         bot_emoji = "🤖"
 
-        # Show message history
         for sender, msg, *rest in st.session_state.chat_history:
             time_sent = rest[0] if rest else "Unknown time"
             prefix = user_emoji if sender == "You" else bot_emoji
             st.markdown(f"**{prefix} {sender}:** {msg}  \n<sub>{time_sent}</sub>", unsafe_allow_html=True)
-            
-        # Chat input form
+
         with st.form("chat_form", clear_on_submit=True):
             user_message = st.text_input("Type your message", key="chat_input", label_visibility="collapsed")
-            send_clicked = st.form_submit_button("📤 Send", use_container_width=True)
+            send_clicked = st.form_submit_button("\U0001F4E4 Send", use_container_width=True)
 
-            # Enlarge button styling
-            st.markdown("""
-                <style>
-                button[kind="primary"] {
-                    padding-top: 0.75rem !important;
-                    padding-bottom: 0.75rem !important;
-                    font-size: 1.1rem !important;
-                    border-radius: 8px !important;
-                }
-                </style>
-            """, unsafe_allow_html=True)
+        st.markdown("""
+            <style>
+            button[kind="primary"] {
+                padding-top: 0.75rem !important;
+                padding-bottom: 0.75rem !important;
+                font-size: 1.1rem !important;
+                border-radius: 8px !important;
+            }
+            </style>
+        """, unsafe_allow_html=True)
 
-        # If user sends message
         if send_clicked and user_message.strip():
             current_time = datetime.now().strftime("%H:%M")
             st.session_state.chat_history.append(("You", user_message.strip(), current_time))
 
-            # Typing animation using HTML/CSS
             with st.empty():
                 typing_placeholder = st.empty()
                 typing_placeholder.markdown("""
@@ -145,23 +159,19 @@ def main():
                     </div>
                 """, unsafe_allow_html=True)
 
-                time.sleep(1.5)  # Simulate typing delay
+                time.sleep(1.5)
                 response, emotion, _ = chat_with_bot(st.session_state['username'], user_message)
                 typing_placeholder.empty()
-
                 st.session_state.chat_history.append(("Bot", f"{response} (Mood: {emotion})", current_time))
                 st.rerun()
 
-        # Scroll to bottom
-        st.markdown(
-            """<script>
+        st.markdown("""
+            <script>
             var chatDiv = window.parent.document.querySelector('section.main');
             if (chatDiv) chatDiv.scrollTop = chatDiv.scrollHeight;
-            </script>""",
-            unsafe_allow_html=True
-        )
+            </script>
+        """, unsafe_allow_html=True)
 
-    # ---------------------- WELLNESS ----------------------
     elif page == "Wellness":
         wellness_page()
         st.markdown("---")
@@ -181,7 +191,6 @@ def main():
                     del st.session_state.current_snack
                 st.rerun()
 
-    # ---------------------- CHAT HISTORY ----------------------
     elif page == "Chat History":
         st.title("🕒 Chat History")
         if chat_logs := get_chat_history(st.session_state['username']):
@@ -195,11 +204,9 @@ def main():
         else:
             st.info("No chat history yet")
 
-    # ---------------------- PROFILE ----------------------
     elif page == "Profile":
         profile_page(st.session_state["username"])
 
-    # ---------------------- JOURNAL ----------------------
     elif page == "Journal":
         st.title("📔 Journal")
         journal_text = st.text_area("New Entry", placeholder="Write your thoughts...")
@@ -207,7 +214,6 @@ def main():
             st.success("Entry saved!")
             st.rerun()
 
-    # ---------------------- LOGOUT ----------------------
     elif page == "Logout":
         st.session_state.clear()
         st.success("Logged out successfully")
