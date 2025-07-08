@@ -4,12 +4,11 @@ import bcrypt
 from streamlit_oauth import OAuth2Component
 from database.database import find_user, add_user
 
-# Google OAuth2 credentials
+# ---- Google OAuth2 Setup ----
 CLIENT_ID = "95879444252-71052beum9527nbj32qbcan2h8i1caan.apps.googleusercontent.com"
 CLIENT_SECRET = "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"
-REDIRECT_URI = "http://localhost:8501"
+REDIRECT_URI = "http://localhost:8501"  # Update this if hosted remotely
 
-# Initialize OAuth2 component
 oauth2 = OAuth2Component(
     client_id=CLIENT_ID,
     client_secret=CLIENT_SECRET,
@@ -17,66 +16,68 @@ oauth2 = OAuth2Component(
     token_endpoint="https://oauth2.googleapis.com/token"
 )
 
-def show_login_success():
+def show_login_success(username):
     st.balloons()
-    st.success("✅ Login successful!")
-    st.session_state.show_login_badge = True
+    st.session_state["username"] = username
+    st.session_state["logged_in"] = True
+    st.session_state["show_login_badge"] = True
+    st.experimental_rerun()
+
 
 def login_page():
+    if st.session_state.get("logged_in"):
+        st.success("✅ Already logged in.")
+        return
+
+    st.title("Login to Mental Wellness Chatbot")
+
+    # ---- Google Sign-In ----
     st.markdown("### 🔐 Sign in with Google")
+    token = oauth2.authorize_button(
+        name="Continue with Google",
+        redirect_uri=REDIRECT_URI,
+        scope=["openid", "email", "profile"],
+        access_type="offline",
+        prompt="consent"
+    )
 
-    if "token" not in st.session_state:
-        token = oauth2.authorize_button(
-            name="Continue with Google",
-            redirect_uri=REDIRECT_URI,
-            scope=["openid", "email", "profile"],
-            access_type="offline",
-            prompt="consent"
+    if token and token.get("access_token"):
+        access_token = token["access_token"]
+
+        # Get user info
+        userinfo_response = requests.get(
+            "https://www.googleapis.com/oauth2/v2/userinfo",
+            headers={"Authorization": f"Bearer {access_token}"}
         )
-        if token:
-            st.session_state.token = token
 
-    if "token" in st.session_state:
-        access_token = st.session_state.token.get("access_token")
-        if access_token:
-            userinfo_response = requests.get(
-                "https://www.googleapis.com/oauth2/v2/userinfo",
-                headers={"Authorization": f"Bearer {access_token}"}
-            )
-            if userinfo_response.status_code == 200:
-                user_info = userinfo_response.json()
-                email = user_info["email"]
+        if userinfo_response.status_code == 200:
+            user_info = userinfo_response.json()
+            email = user_info.get("email")
 
-                st.session_state["username"] = email
-                st.session_state["logged_in"] = True
+            # Store new user if not found
+            if not find_user(email):
+                add_user(email, "")  # Register Google user with empty password
 
-                if not find_user(email):
-                    add_user(email, "")  # Register Google user (empty password)
-
-                show_login_success()
-                return
-            else:
-                st.error("❌ Failed to retrieve user info.")
+            show_login_success(email)
+            return
         else:
-            st.error("❌ Invalid access token.")
+            st.error("❌ Failed to retrieve user info.")
 
-    # Fallback manual login (optional)
     st.markdown("---")
-    st.subheader("Or login manually")
 
-    with st.form(key="login_form"):
-        username = st.text_input("Username")
+    # ---- Manual Login ----
+    st.subheader("👤 Or login manually")
+    with st.form("login_form"):
+        username = st.text_input("Username or Email")
         password = st.text_input("Password", type="password")
         submitted = st.form_submit_button("Login")
 
         if submitted:
             user = find_user(username)
-            if user and bcrypt.checkpw(password.encode(), user["password"].encode()):
-                st.success(f"✅ Welcome, {username}!")
-                st.session_state["username"] = username
-                st.session_state["logged_in"] = True
-                show_login_success()
-            elif user:
-                st.error("Incorrect password.")
+            if user:
+                if bcrypt.checkpw(password.encode(), user["password"].encode()):
+                    show_login_success(username)
+                else:
+                    st.error("❌ Incorrect password.")
             else:
-                st.error("User not found.")
+                st.error("❌ User not found.")
