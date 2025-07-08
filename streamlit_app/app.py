@@ -15,13 +15,13 @@ from streamlit_app.fun_support import get_fun_activity, get_healthy_snack
 
 # OAuth Configuration (Google Login)
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"  # Allow HTTP for local testing
-CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID"
-CLIENT_SECRET = "YOUR_GOOGLE_CLIENT_SECRET"
+CLIENT_ID = "95879444252-71052beum9527nbj32qbcan2h8i1caan.apps.googleusercontent.com"
+CLIENT_SECRET = "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"
 REDIRECT_URI = "http://localhost:8501"
 
 oauth2 = OAuth2Component(
-    client_id=CLIENT_ID,
-    client_secret=CLIENT_SECRET,
+    client_id=Client :95879444252-71052beum9527nbj32qbcan2h8i1caan.apps.googleusercontent.com,
+    client_secret=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,
     authorize_endpoint="https://accounts.google.com/o/oauth2/v2/auth",
     token_endpoint="https://oauth2.googleapis.com/token",
     redirect_uri=REDIRECT_URI,
