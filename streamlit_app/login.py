@@ -11,7 +11,7 @@ REDIRECT_URI = "http://localhost:8501"  # Or your deployed Streamlit URL
 
 oauth2 = OAuth2Component(
     client_id=CLIENT_ID,
-    client_secret=CLIENT_SECRET,
+    client_secret="YOUR_CLIENT_SECRET",
     authorize_endpoint="https://accounts.google.com/o/oauth2/v2/auth",
     token_endpoint="https://oauth2.googleapis.com/token"
 )
