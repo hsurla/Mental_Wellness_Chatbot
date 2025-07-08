@@ -49,21 +49,30 @@ def main():
     chat_with_bot = get_chatbot_functions()
 
     if 'logged_in' not in st.session_state:
-        st.session_state['logged_in'] = False
+    st.session_state.logged_in = False
 
     if not st.session_state['logged_in']:
-        st.title("🔐 Login with Google")
-        authorization_url = oauth2.get_authorization_url()
-        st.markdown(f"[Click here to login with Google]({authorization_url})")
+        result = oauth2.authorize_button(
+            name="Continue with Google",
+            icon="🌐",
+            scopes=["openid", "email", "profile"],
+            use_container_width=True,
+        )
+        if result and "token" in result:
+            userinfo_response = requests.get(
+                "https://www.googleapis.com/oauth2/v1/userinfo",
+               headers={"Authorization": f"Bearer {result['token']['access_token']}"}
+              )
 
-        token = oauth2.get_access_token()
-        if token:
-            user_info = oauth2.get_user_info(token)
-            st.session_state['username'] = user_info.get("email", "Guest")
-            st.session_state['logged_in'] = True
-            st.session_state['show_login_badge'] = True
-            st.experimental_rerun()
-        return
+        if userinfo_response.status_code == 200:
+            userinfo = userinfo_response.json()
+            st.session_state.logged_in = True
+            st.session_state.username = userinfo.get("email", "anonymous")
+            st.session_state.show_login_badge = True
+            st.rerun()
+        else:
+            st.error("Failed to get user info from Google.")
+    return
 
     if st.session_state.get("show_login_badge"):
         st.markdown(
