@@ -10,10 +10,11 @@ CLIENT_SECRET = "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"
 REDIRECT_URI = "http://localhost:8501"  # Or your deployed Streamlit URL
 
 oauth2 = OAuth2Component(
-    client_id="95879444252-71052beum9527nbj32qbcan2h8i1caan.apps.googleusercontent.com",
+    client_id="YOUR_CLIENT_ID,
     client_secret="YOUR_CLIENT_SECRET",
     authorize_url="https://accounts.google.com/o/oauth2/auth",
     token_url="https://oauth2.googleapis.com/token",
+    redirect_uri="http://localhost:8501",
     scope=["openid", "email", "profile"]
 )
 
