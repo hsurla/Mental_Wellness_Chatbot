@@ -8,8 +8,8 @@ from streamlit.components.v1 import html
 from database.database import find_user, add_user
 
 # Google OAuth2 credentials
-CLIENT_ID ="639432204726-af4d4q5v8a82cs67uo33djmhdgqujsf1.apps.googleusercontent.com"
-CLIENT_SECRET = "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"
+CLIENT_ID ="Client :95879444252-71052beum9527nbj32qbcan2h8i1caan.apps.googleusercontent.com"
+CLIENT_SECRET = "Client secret :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"
 REDIRECT_URI = "http://localhost:8501"  # Or your deployed Streamlit URL
 
 def show_login_success():
