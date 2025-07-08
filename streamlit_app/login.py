@@ -3,90 +3,62 @@
 import streamlit as st
 import requests
 import bcrypt
-from urllib.parse import urlencode
-from streamlit.components.v1 import html
+from streamlit_oauth import OAuth2Component
 from database.database import find_user, add_user
 
-# Google OAuth2 credentials
-CLIENT_ID ="Client :95879444252-71052beum9527nbj32qbcan2h8i1caan.apps.googleusercontent.com"
-CLIENT_SECRET = "Client secret :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"
-REDIRECT_URI = "http://localhost:8501"  # Or your deployed Streamlit URL
+# 🔐 Replace with your actual credentials
+CLIENT_ID = "95879444252-71052beum9527nbj32qbcan2h8i1caan.apps.googleusercontent.com"
+CLIENT_SECRET = "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"
+REDIRECT_URI = "http://localhost:8501"  # or your hosted domain
 
-def show_login_success():
-    """Show login success animation and redirect to chat page"""
-    st.balloons()
-    st.success("✅ Login successful!")
-
-    # Redirect using JavaScript
-    js_redirect = """
-    <script>
-        setTimeout(function() {
-            window.location.href = window.location.origin;
-        }, 1000);
-    </script>
-    """
-    st.markdown(js_redirect, unsafe_allow_html=True)
+# Set up OAuth2 for Google
+oauth2 = OAuth2Component(
+    client_id=CLIENT_ID,
+    client_secret=CLIENT_SECRET,
+    authorize_endpoint="https://accounts.google.com/o/oauth2/v2/auth",
+    token_endpoint="https://oauth2.googleapis.com/token",
+    revoke_endpoint="https://oauth2.googleapis.com/revoke",
+    redirect_uri=REDIRECT_URI,
+)
 
 def login_page():
-    # Check if already logged in
     if st.session_state.get("logged_in"):
-        show_login_success()
+        st.success(f"✅ Logged in as {st.session_state['username']}")
         return
-    
-    code = st.query_params.get("code")
-    if code:
-        token_response = requests.post(
-            "https://oauth2.googleapis.com/token",
-            data={
-                "code": code,
-                "client_id": CLIENT_ID,
-                "client_secret": CLIENT_SECRET,
-                "redirect_uri": REDIRECT_URI,
-                "grant_type": "authorization_code"
-            }
+
+    st.markdown("### 🔐 Login with Google")
+    result = oauth2.authorize_button(
+        name="Continue with Google",
+        icon="🌐",
+        scopes=["openid", "email", "profile"],
+        use_container_width=True
+    )
+
+    if result and "token" in result:
+        # Get user info from Google
+        userinfo_response = requests.get(
+            "https://www.googleapis.com/oauth2/v1/userinfo",
+            headers={"Authorization": f"Bearer {result['token']['access_token']}"}
         )
-        if token_response.status_code == 200:
-            tokens = token_response.json()
-            access_token = tokens.get("access_token")
+        if userinfo_response.status_code == 200:
+            user_info = userinfo_response.json()
+            email = user_info["email"]
+            st.session_state["username"] = email
+            st.session_state["logged_in"] = True
+            st.session_state["show_login_badge"] = True
 
-            userinfo_response = requests.get(
-                "https://www.googleapis.com/oauth2/v2/userinfo",
-                headers={"Authorization": f"Bearer {access_token}"}
-            )
+            # If first time, add user to DB with empty password
+            if not find_user(email):
+                add_user(email, "")
 
-            if userinfo_response.status_code == 200:
-                user_info = userinfo_response.json()
-                email = user_info["email"]
-                st.session_state["username"] = email
-                st.session_state["logged_in"] = True
-
-                if not find_user(email):
-                    add_user(email, "")  # Register Google user with blank password
-
-                
-                show_login_success()
-                return  # Skip showing the manual login form
-            else:
-                st.error("❌ Failed to retrieve user info.")
+            st.rerun()
         else:
-            st.error("❌ Failed to get access token.")
+            st.error("❌ Failed to retrieve user info from Google.")
 
-    # Google Sign-In Button (if not logged in via redirect)
-    st.markdown("### 🔐 Sign in with Google")
-    params = {
-        "client_id": CLIENT_ID,
-        "response_type": "code",
-        "redirect_uri": REDIRECT_URI,
-        "scope": "openid email profile",
-        "access_type": "offline",
-        "prompt": "consent"
-    }
-    google_login_url = f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}"
-    st.markdown(f"[👉 Click here to Sign in with Google]({google_login_url})")
+    st.markdown("---")
 
-    #Manual Login Section
-    st.title("Login")
-
+    # Optional manual login fallback
+    st.title("Manual Login")
     with st.form(key="login_form"):
         username = st.text_input("Username")
         password = st.text_input("Password", type="password")
@@ -96,9 +68,11 @@ def login_page():
             user = find_user(username)
             if user:
                 if bcrypt.checkpw(password.encode(), user["password"].encode()):
-                    st.success(f"✅ Welcome, {username}!")
                     st.session_state["username"] = username
                     st.session_state["logged_in"] = True
+                    st.session_state["show_login_badge"] = True
+                    st.success(f"✅ Welcome, {username}!")
+                    st.rerun()
                 else:
                     st.error("Incorrect password.")
             else:
