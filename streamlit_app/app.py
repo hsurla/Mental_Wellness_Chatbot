@@ -49,7 +49,7 @@ def main():
     chat_with_bot = get_chatbot_functions()
 
     if 'logged_in' not in st.session_state:
-    st.session_state.logged_in = False
+        st.session_state.logged_in = False
 
     if not st.session_state['logged_in']:
         result = oauth2.authorize_button(
