@@ -4,7 +4,7 @@ from google_auth_oauthlib.flow import Flow
 import requests
 
 # Configuration (REPLACE WITH YOURS)
-CLIENT_ID = "95879444252-71052beum9527nbj32qbcan2h8i1caan.apps.googleusercontent.com"
+CLIENT_ID = "95879444252-7t052beum9527nbj32qbcan2h8i1caan.apps.googleusercontent.com"
 CLIENT_SECRET = "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"
 REDIRECT_URI = "http://localhost:8501"  # Must match Google Console
 
