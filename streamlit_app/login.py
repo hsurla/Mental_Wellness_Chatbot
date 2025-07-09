@@ -7,14 +7,13 @@ client_id = "95879444252-7t052beum9527nbj32qbcan2h8i1caan.apps.googleusercontent
 client_secret = "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"
 auth_url = "https://accounts.google.com/o/oauth2/auth"
 token_url = "https://oauth2.googleapis.com/token"
-redirect_uri = "http://localhost:8501"  # Must match exactly
+redirect_uri = "http://localhost:8501"  # Must match exactly with Google Cloud Console
 
 oauth2 = OAuth2Component(
     client_id=client_id,
     client_secret=client_secret,
     authorize_endpoint=auth_url,
     token_endpoint=token_url,
-    redirect_uri=redirect_uri,
     scope=[
         "openid",
         "https://www.googleapis.com/auth/userinfo.email",
@@ -22,7 +21,7 @@ oauth2 = OAuth2Component(
     ]
 )
 
-# Dummy user store (replace with real DB later)
+# Dummy user store (for testing — use database in production)
 USER_CREDENTIALS = {
     "demo_user": "demo_pass"
 }
@@ -49,10 +48,10 @@ def login_page():
 
     st.markdown("---")
 
-    # --- Google OAuth (inline, no redirect tab) ---
+    # --- Google OAuth (inline, no new tab) ---
     st.subheader("Or sign in with Google")
 
-    token = oauth2.login_button("Continue with Google")
+    token = oauth2.login_button("Continue with Google", redirect_uri=redirect_uri)
 
     if token:
         userinfo = requests.get(
