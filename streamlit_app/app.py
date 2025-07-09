@@ -67,7 +67,7 @@ def main():
     # Top-right logout button
     st.markdown(
     """
-    <div style="position: fixed; top: 25px; right: 30px; z-index: 9999;">
+    <div style="position: fixed; top: 60px; right: 40px; z-index: 9999;">
         <form action="?logout" method="post">
             <button style="
                 background-color: #f44336;
