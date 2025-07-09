@@ -1,56 +1,81 @@
 import streamlit as st
-from google_auth_oauthlib.flow import Flow
+from streamlit_oauth import OAuth2Component
 import requests
 
-# Configuration (REPLACE WITH YOURS)
-CLIENT_ID = "95879444252-7t052beum9527nbj32qbcan2h8i1caan.apps.googleusercontent.com"
-CLIENT_SECRET = "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"
-REDIRECT_URI = "http://localhost:8501"  # Must match Google Console
+# Google OAuth2 Configuration
+client_id = "95879444252-7t052beum9527nbj32qbcan2h8i1caan.apps.googleusercontent.com"
+client_secret = "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"
+auth_url = "https://accounts.google.com/o/oauth2/auth"
+token_url = "https://oauth2.googleapis.com/token"
+redirect_uri = "http://localhost:8501"  # Must exactly match your Google Cloud Console
+
+# Initialize OAuth2 component
+oauth2 = OAuth2Component(
+    client_id=client_id,
+    client_secret=client_secret,
+    authorize_endpoint=auth_url,
+    token_endpoint=token_url
+)
+
+# Dummy local credentials (for manual login)
+USER_CREDENTIALS = {
+    "demo_user": "demo_pass"
+}
 
 def login_page():
     if 'user_email' in st.session_state:
         return True
 
-    # Initialize Flow
-    flow = Flow.from_client_config(
-        {
-            "web": {
-                "client_id": CLIENT_ID,
-                "client_secret": CLIENT_SECRET,
-                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                "token_uri": "https://accounts.google.com/o/oauth2/token",
-                "redirect_uris": [REDIRECT_URI]
-            }
-        },
-        scopes=["openid", "email", "profile"],
-        redirect_uri=REDIRECT_URI
+    st.title("🔐 Login")
+
+    # --- Manual Login Form ---
+    with st.form("manual_login_form"):
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+        submitted = st.form_submit_button("Login")
+
+        if submitted:
+            if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == password:
+                st.session_state.user_email = f"{username}@localapp"
+                st.success("Logged in successfully.")
+                st.rerun()
+            else:
+                st.error("Invalid username or password.")
+
+    st.markdown("---")
+    st.subheader("Or sign in with Google")
+
+    # --- Google OAuth2 Button ---
+    token = oauth2.authorize_button(
+        name="Continue with Google",
+        redirect_uri=redirect_uri,
+        scope="openid https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile"
     )
 
-    # Step 1: Show Login Button
-    params = st.query_params
-    if 'code' not in params:
-        auth_url, _ = flow.authorization_url(prompt="consent")
-        st.markdown(f"""
-        <a href="{auth_url}">
-            <button style="
-                background: #4285F4;
-                color: white;
-                padding: 10px 20px;
-                border: none;
-                border-radius: 5px;
-            ">Login with Google</button>
-        </a>
-        """, unsafe_allow_html=True)
-        return False
+    # --- Token Handling ---
+    if token:
+        st.warning("OAuth token response:")
+        st.json(token)  # For debugging
 
-    # Step 2: Handle Callback
-    else:
-        flow.fetch_token(code=params['code'][0])
-        userinfo = requests.get(
-            "https://www.googleapis.com/oauth2/v3/userinfo",
-            headers={"Authorization": f"Bearer {flow.credentials.token}"}
-        ).json()
+        # ✅ Access nested token
+        if 'token' in token and 'access_token' in token['token']:
+            access_token = token['token']['access_token']
 
-        st.session_state.user_email = userinfo['email']
-        st.rerun()
-        return True
+            # Get user info from Google
+            userinfo = requests.get(
+                "https://www.googleapis.com/oauth2/v3/userinfo",
+                headers={"Authorization": f"Bearer {access_token}"}
+            ).json()
+
+            if "email" in userinfo:
+                st.session_state.user_email = userinfo["email"]
+                st.success(f"Logged in as {userinfo['email']}")
+                st.rerun()
+            else:
+                st.error("Failed to fetch user info from Google.")
+        else:
+            st.error("Google login failed: No access_token returned.")
+            if "error" in token:
+                st.error(f"OAuth Error: {token['error']}")
+
+    return False

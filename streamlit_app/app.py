@@ -67,10 +67,9 @@ def main():
     # Sidebar navigation
     with st.sidebar:
         st.title(f"Hello, {username.split('@')[0]}!")
-        st.image("https://cdn-icons-png.flaticon.com/512/2965/2965300.png", width=100)
         page = st.radio(
             "Menu",
-            ["💬 Chatbot", "🧘 Wellness", "📚 Chat History", "👤 Profile", "🚪 Logout"],
+            ["💬 Chatbot", "🧈 Wellness", "📚 Chat History", "👤 Profile", "🚪 Logout"],
             label_visibility="collapsed"
         )
         st.markdown("---")
@@ -103,8 +102,8 @@ def main():
                 st.session_state.chat_history.append(("Bot", f"{response} (Mood: {emotion})", timestamp))
                 st.rerun()
 
-    elif page == "🧘 Wellness":
-        st.title("🧘 Wellness Center")
+    elif page == "🧈 Wellness":
+        st.title("🧈 Wellness Center")
 
         col1, col2 = st.columns(2)
         with col1:
