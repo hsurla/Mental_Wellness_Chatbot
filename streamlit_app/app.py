@@ -64,20 +64,13 @@ def main():
 
     username = st.session_state.user_email
 
-    # Header with Logout button
-    col1, col2 = st.columns([10, 1])
-    with col2:
-        if st.button("Logout", key="logout_btn"):
-            st.session_state.clear()
-            st.success("Logged out successfully.")
-            st.rerun()
-
     # Sidebar navigation
     with st.sidebar:
         st.title(f"Hello, {username.split('@')[0]}!")
+        st.image("https://cdn-icons-png.flaticon.com/512/2965/2965300.png", width=100)
         page = st.radio(
             "Menu",
-            ["💬 Chatbot", "🧈 Wellness", "📚 Chat History", "👤 Profile"],
+            ["💬 Chatbot", "🧘 Wellness", "📚 Chat History", "👤 Profile", "🚪 Logout"],
             label_visibility="collapsed"
         )
         st.markdown("---")
@@ -110,8 +103,8 @@ def main():
                 st.session_state.chat_history.append(("Bot", f"{response} (Mood: {emotion})", timestamp))
                 st.rerun()
 
-    elif page == "🧈 Wellness":
-        st.title("🧈 Wellness Center")
+    elif page == "🧘 Wellness":
+        st.title("🧘 Wellness Center")
 
         col1, col2 = st.columns(2)
         with col1:
@@ -143,6 +136,13 @@ def main():
 
     elif page == "👤 Profile":
         profile_page(username)
+
+    elif page == "🚪 Logout":
+        st.session_state.clear()
+        st.success("Logged out successfully!")
+        time.sleep(1)
+        st.query_params.clear()  # ✅ Clears ?code= from URL
+        st.rerun()
 
 if __name__ == "__main__":
     main()
