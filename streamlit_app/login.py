@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 import bcrypt
-from streamlit_oauth import OAuth2Component
+from st_oauth import st_oauth
 from database.database import find_user, add_user
 
 # ---- Google OAuth2 Setup ----
@@ -9,12 +9,11 @@ CLIENT_ID = "95879444252-71052beum9527nbj32qbcan2h8i1caan.apps.googleusercontent
 CLIENT_SECRET = "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"
 REDIRECT_URI = "http://localhost:8501"  # Or your deployed Streamlit URL
 
-oauth2 = OAuth2Component(
+oauth = st_oauth(
     client_id="YOUR_CLIENT_ID",
     client_secret="YOUR_CLIENT_SECRET",
-    authorize_url="https://accounts.google.com/o/oauth2/auth",
-    token_url="https://oauth2.googleapis.com/token",
-    redirect_uri="http://localhost:8501",
+    authorization_url="https://your-provider.com/oauth2/authorize",
+    token_url="https://your-provider.com/oauth2/token",
     scope=["openid", "email", "profile"]
 )
 
