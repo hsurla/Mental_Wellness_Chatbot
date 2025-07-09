@@ -7,9 +7,9 @@ client_id = "95879444252-7t052beum9527nbj32qbcan2h8i1caan.apps.googleusercontent
 client_secret = "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"
 auth_url = "https://accounts.google.com/o/oauth2/auth"
 token_url = "https://oauth2.googleapis.com/token"
-redirect_uri = "http://localhost:8501"  # Must match Google Console exactly
+redirect_uri = "http://localhost:8501"  # Must match exactly with Google Console
 
-# Initialize OAuth2 component
+# OAuth2 Component
 oauth2 = OAuth2Component(
     client_id=client_id,
     client_secret=client_secret,
@@ -17,7 +17,7 @@ oauth2 = OAuth2Component(
     token_endpoint=token_url
 )
 
-# Dummy manual credentials
+# Manual credentials (temporary)
 USER_CREDENTIALS = {
     "demo_user": "demo_pass"
 }
@@ -28,7 +28,7 @@ def login_page():
 
     st.title("🔐 Login")
 
-    # --- Manual Login Section ---
+    # --- Manual Login ---
     with st.form("manual_login_form"):
         username = st.text_input("Username")
         password = st.text_input("Password", type="password")
@@ -37,7 +37,6 @@ def login_page():
         if submitted:
             if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == password:
                 st.session_state.user_email = f"{username}@localapp"
-                st.session_state.profile_pic = None
                 st.success("Logged in successfully.")
                 st.rerun()
             else:
@@ -46,14 +45,14 @@ def login_page():
     st.markdown("---")
     st.subheader("Or sign in with Google")
 
-    # --- Google Login Button ---
+    # --- Google Login ---
     token = oauth2.authorize_button(
         name="Continue with Google",
         redirect_uri=redirect_uri,
         scope="openid https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile"
     )
 
-    # --- Handle OAuth Token Response ---
+    # --- Handle Google Token ---
     if token and 'token' in token and 'access_token' in token['token']:
         access_token = token['token']['access_token']
 
@@ -64,11 +63,10 @@ def login_page():
 
         if "email" in userinfo:
             st.session_state.user_email = userinfo["email"]
-            st.session_state.profile_pic = userinfo.get("picture", None)
             st.success(f"Logged in as {userinfo['email']}")
             st.rerun()
         else:
-            st.error("Google login failed: Unable to fetch email from profile.")
+            st.error("Google login failed: Unable to fetch user email.")
     elif token and "error" in token:
         st.error(f"Google login error: {token['error_description']}")
 

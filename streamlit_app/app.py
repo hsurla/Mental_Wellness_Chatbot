@@ -55,27 +55,28 @@ def profile_page(username):
         )
 
 def main():
+    # Allow insecure HTTP (for local OAuth testing)
     os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
+    # Check login status
     if not login_page():
         return
 
     username = st.session_state.user_email
-    profile_pic = st.session_state.get("profile_pic", None)
 
-    # ✅ Top bar with profile + logout
-    col1, col2, col3 = st.columns([7, 1, 1])
-    with col2:
-        if profile_pic:
-            st.image(profile_pic, width=50)
-    with col3:
-        if st.button("🚪 Logout", use_container_width=True):
-            with st.empty():
-                st.success("Logging out...")
-                time.sleep(2)  # ⏳ Delay for animation
-            st.session_state.clear()
-            st.query_params.clear()
-            st.rerun()
+    # Top-right logout button
+    st.markdown(
+        """
+        <div style="position: fixed; top: 10px; right: 20px; z-index: 9999;">
+            <form action="?logout" method="post">
+                <button style="background-color: #f44336; color: white; border: none; padding: 5px 12px; border-radius: 5px; cursor: pointer;">
+                    Logout
+                </button>
+            </form>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
     # Sidebar navigation
     with st.sidebar:
@@ -149,6 +150,14 @@ def main():
 
     elif page == "👤 Profile":
         profile_page(username)
+
+    # Handle logout if triggered via URL
+    if st.query_params.get("logout") == [""]:
+        st.session_state.clear()
+        st.success("✅ You have been logged out.")
+        time.sleep(1)
+        st.query_params.clear()
+        st.rerun()
 
 if __name__ == "__main__":
     main()
