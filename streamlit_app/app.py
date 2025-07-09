@@ -55,42 +55,52 @@ def profile_page(username):
         )
 
 def main():
-    # Allow insecure HTTP (for local OAuth testing)
+    # Allow insecure HTTP (for localhost testing)
     os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
-    # Check login status
+    # Check login
     if not login_page():
-        return
+        return  # Wait until login is complete
 
     username = st.session_state.user_email
 
-    # Top-right logout button
-    st.markdown(
-    """
-    <div style="position: fixed; top: 60px; right: 40px; z-index: 9999;">
-        <form action="?logout" method="post">
-            <button style="
-                background-color: #f44336;
+    # ✅ Top-right corner Logout Button
+    st.markdown("""
+        <style>
+            .logout-button-container {
+                position: fixed;
+                top: 20px;
+                right: 30px;
+                z-index: 9999;
+            }
+            .logout-button-container button {
+                background-color: #e74c3c;
                 color: white;
                 border: none;
                 padding: 6px 14px;
-                border-radius: 6px;
+                border-radius: 5px;
                 font-size: 14px;
-                box-shadow: 0px 2px 5px rgba(0,0,0,0.2);
+                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
                 cursor: pointer;
-            ">
-                Logout
-            </button>
-        </form>
-    </div>
-    """,
-    unsafe_allow_html=True
-    )
+            }
+        </style>
+        <div class="logout-button-container">
+            <form action="" method="get">
+                <button type="submit" name="logout">Logout</button>
+            </form>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # Handle logout
+    if st.query_params.get("logout") is not None:
+        st.session_state.clear()
+        st.success("Logged out successfully.")
+        st.query_params.clear()
+        st.rerun()
 
     # Sidebar navigation
     with st.sidebar:
         st.title(f"Hello, {username.split('@')[0]}!")
-        st.image("https://cdn-icons-png.flaticon.com/512/2965/2965300.png", width=100)
         page = st.radio(
             "Menu",
             ["💬 Chatbot", "🧘 Wellness", "📚 Chat History", "👤 Profile"],
@@ -159,14 +169,6 @@ def main():
 
     elif page == "👤 Profile":
         profile_page(username)
-
-    # Handle logout if triggered via URL
-    if st.query_params.get("logout") == [""]:
-        st.session_state.clear()
-        st.success("✅ You have been logged out.")
-        time.sleep(1)
-        st.query_params.clear()
-        st.rerun()
 
 if __name__ == "__main__":
     main()
