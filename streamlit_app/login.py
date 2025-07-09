@@ -7,7 +7,7 @@ client_id = "95879444252-7t052beum9527nbj32qbcan2h8i1caan.apps.googleusercontent
 client_secret = "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"
 auth_url = "https://accounts.google.com/o/oauth2/auth"
 token_url = "https://oauth2.googleapis.com/token"
-redirect_uri = "http://localhost:8501"  # Must exactly match Google Cloud Console
+redirect_uri = "http://localhost:8501"  # Must exactly match your Google Cloud Console
 
 # Initialize OAuth2 component
 oauth2 = OAuth2Component(
@@ -17,7 +17,7 @@ oauth2 = OAuth2Component(
     token_endpoint=token_url
 )
 
-# Dummy credentials for manual login
+# Dummy local credentials (for manual login)
 USER_CREDENTIALS = {
     "demo_user": "demo_pass"
 }
@@ -45,22 +45,26 @@ def login_page():
     st.markdown("---")
     st.subheader("Or sign in with Google")
 
-    # --- Google Login Button ---
+    # --- Google OAuth2 Button ---
     token = oauth2.authorize_button(
         name="Continue with Google",
         redirect_uri=redirect_uri,
         scope="openid https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile"
     )
 
-    # --- Debug + Token Handling ---
+    # --- Token Handling ---
     if token:
         st.warning("OAuth token response:")
-        st.json(token)
+        st.json(token)  # For debugging
 
-        if 'access_token' in token:
+        # ✅ Access nested token
+        if 'token' in token and 'access_token' in token['token']:
+            access_token = token['token']['access_token']
+
+            # Get user info from Google
             userinfo = requests.get(
                 "https://www.googleapis.com/oauth2/v3/userinfo",
-                headers={"Authorization": f"Bearer {token['access_token']}"}
+                headers={"Authorization": f"Bearer {access_token}"}
             ).json()
 
             if "email" in userinfo:
@@ -71,7 +75,7 @@ def login_page():
                 st.error("Failed to fetch user info from Google.")
         else:
             st.error("Google login failed: No access_token returned.")
-            if isinstance(token, dict) and "error" in token:
+            if "error" in token:
                 st.error(f"OAuth Error: {token['error']}")
 
     return False
