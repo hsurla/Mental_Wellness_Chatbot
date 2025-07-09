@@ -141,7 +141,7 @@ def main():
         st.session_state.clear()
         st.success("Logged out successfully!")
         time.sleep(1)
-        st.experimental_set_query_params()  # Clear ?code= from URL
+        st.query_params.clear()  # ✅ Clears ?code= from URL
         st.rerun()
 
 if __name__ == "__main__":
