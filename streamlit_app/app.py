@@ -65,7 +65,7 @@ def main():
     username = st.session_state.user_email
 
     # Top-right logout button
-st.markdown(
+    st.markdown(
     """
     <div style="position: fixed; top: 25px; right: 30px; z-index: 9999;">
         <form action="?logout" method="post">
