@@ -5,8 +5,8 @@ import os
 from pathlib import Path
 
 # Configuration - MUST REPLACE WITH YOUR VALUES
-CLIENT_ID = "your-actual-client-id.apps.googleusercontent.com"
-CLIENT_SECRET = "your-actual-client-secret"
+CLIENT_ID = "95879444252-71052beum9527nbj32qbcan2h8i1caan.apps.googleusercontent.com"
+CLIENT_SECRET = "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"
 REDIRECT_URI = "http://localhost:8501"
 SCOPES = ["openid", "https://www.googleapis.com/auth/userinfo.email"]
 
