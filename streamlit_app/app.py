@@ -55,14 +55,27 @@ def profile_page(username):
         )
 
 def main():
-    # Allow insecure HTTP (for localhost testing)
     os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
-    # Check login
     if not login_page():
-        return  # Wait until login is complete
+        return
 
     username = st.session_state.user_email
+    profile_pic = st.session_state.get("profile_pic", None)
+
+    # ✅ Top bar with profile + logout
+    col1, col2, col3 = st.columns([7, 1, 1])
+    with col2:
+        if profile_pic:
+            st.image(profile_pic, width=50)
+    with col3:
+        if st.button("🚪 Logout", use_container_width=True):
+            with st.empty():
+                st.success("Logging out...")
+                time.sleep(2)  # ⏳ Delay for animation
+            st.session_state.clear()
+            st.query_params.clear()
+            st.rerun()
 
     # Sidebar navigation
     with st.sidebar:
@@ -70,7 +83,7 @@ def main():
         st.image("https://cdn-icons-png.flaticon.com/512/2965/2965300.png", width=100)
         page = st.radio(
             "Menu",
-            ["💬 Chatbot", "🧘 Wellness", "📚 Chat History", "👤 Profile", "🚪 Logout"],
+            ["💬 Chatbot", "🧘 Wellness", "📚 Chat History", "👤 Profile"],
             label_visibility="collapsed"
         )
         st.markdown("---")
@@ -136,13 +149,6 @@ def main():
 
     elif page == "👤 Profile":
         profile_page(username)
-
-    elif page == "🚪 Logout":
-        st.session_state.clear()
-        st.success("Logged out successfully!")
-        time.sleep(1)
-        st.query_params.clear()  # ✅ Clears ?code= from URL
-        st.rerun()
 
 if __name__ == "__main__":
     main()

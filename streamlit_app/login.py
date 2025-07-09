@@ -7,7 +7,7 @@ client_id = "95879444252-7t052beum9527nbj32qbcan2h8i1caan.apps.googleusercontent
 client_secret = "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"
 auth_url = "https://accounts.google.com/o/oauth2/auth"
 token_url = "https://oauth2.googleapis.com/token"
-redirect_uri = "http://localhost:8501"  # Must exactly match your Google Cloud Console
+redirect_uri = "http://localhost:8501"  # Must match Google Console exactly
 
 # Initialize OAuth2 component
 oauth2 = OAuth2Component(
@@ -17,7 +17,7 @@ oauth2 = OAuth2Component(
     token_endpoint=token_url
 )
 
-# Dummy local credentials (for manual login)
+# Dummy manual credentials
 USER_CREDENTIALS = {
     "demo_user": "demo_pass"
 }
@@ -28,7 +28,7 @@ def login_page():
 
     st.title("🔐 Login")
 
-    # --- Manual Login Form ---
+    # --- Manual Login Section ---
     with st.form("manual_login_form"):
         username = st.text_input("Username")
         password = st.text_input("Password", type="password")
@@ -37,6 +37,7 @@ def login_page():
         if submitted:
             if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == password:
                 st.session_state.user_email = f"{username}@localapp"
+                st.session_state.profile_pic = None
                 st.success("Logged in successfully.")
                 st.rerun()
             else:
@@ -45,37 +46,30 @@ def login_page():
     st.markdown("---")
     st.subheader("Or sign in with Google")
 
-    # --- Google OAuth2 Button ---
+    # --- Google Login Button ---
     token = oauth2.authorize_button(
         name="Continue with Google",
         redirect_uri=redirect_uri,
         scope="openid https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile"
     )
 
-    # --- Token Handling ---
-    if token:
-        st.warning("OAuth token response:")
-        st.json(token)  # For debugging
+    # --- Handle OAuth Token Response ---
+    if token and 'token' in token and 'access_token' in token['token']:
+        access_token = token['token']['access_token']
 
-        # ✅ Access nested token
-        if 'token' in token and 'access_token' in token['token']:
-            access_token = token['token']['access_token']
+        userinfo = requests.get(
+            "https://www.googleapis.com/oauth2/v3/userinfo",
+            headers={"Authorization": f"Bearer {access_token}"}
+        ).json()
 
-            # Get user info from Google
-            userinfo = requests.get(
-                "https://www.googleapis.com/oauth2/v3/userinfo",
-                headers={"Authorization": f"Bearer {access_token}"}
-            ).json()
-
-            if "email" in userinfo:
-                st.session_state.user_email = userinfo["email"]
-                st.success(f"Logged in as {userinfo['email']}")
-                st.rerun()
-            else:
-                st.error("Failed to fetch user info from Google.")
+        if "email" in userinfo:
+            st.session_state.user_email = userinfo["email"]
+            st.session_state.profile_pic = userinfo.get("picture", None)
+            st.success(f"Logged in as {userinfo['email']}")
+            st.rerun()
         else:
-            st.error("Google login failed: No access_token returned.")
-            if "error" in token:
-                st.error(f"OAuth Error: {token['error']}")
+            st.error("Google login failed: Unable to fetch email from profile.")
+    elif token and "error" in token:
+        st.error(f"Google login error: {token['error_description']}")
 
     return False
