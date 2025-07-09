@@ -26,7 +26,7 @@ if not Path("client_secrets.json").exists():
 def get_google_auth_url():
     flow = Flow.from_client_secrets_file(
         'client_secrets.json',
-        scopes=SCOPES,
+        scopes=['openid', 'emial', 'profile' ],
         redirect_uri=REDIRECT_URI
     )
     authorization_url, _ = flow.authorization_url(
