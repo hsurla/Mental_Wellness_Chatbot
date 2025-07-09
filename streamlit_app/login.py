@@ -1,7 +1,6 @@
 import streamlit as st
 import requests
 import bcrypt
-from st_oauth import st_oauth
 from database.database import find_user, add_user
 
 # ---- Google OAuth2 Setup ----
@@ -9,13 +8,21 @@ CLIENT_ID = "95879444252-71052beum9527nbj32qbcan2h8i1caan.apps.googleusercontent
 CLIENT_SECRET = "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"
 REDIRECT_URI = "http://localhost:8501"  # Or your deployed Streamlit URL
 
-oauth = st_oauth(
+from extra_streamlit_components import OAuth2Component
+
+oauth2 = OAuth2Component(
     client_id="YOUR_CLIENT_ID",
     client_secret="YOUR_CLIENT_SECRET",
-    authorization_url="https://your-provider.com/oauth2/authorize",
-    token_url="https://your-provider.com/oauth2/token",
-    scope=["openid", "email", "profile"]
+    authroize_url="https://provider.com/auth",  # Check spelling ('authorize_url' vs 'authorization_url')
+    token_url="https://provider.com/token",
+    refresh_token_url="https://provider.com/refresh",
+    revoke_token_url="https://provider.com/revoke",
+    scope="openid email profile"
 )
+
+result = oauth2.authorize_button("Login with Provider")
+if result:
+    st.write("Token:", result.get('token'))
 
 def show_login_success(username):
     st.balloons()
