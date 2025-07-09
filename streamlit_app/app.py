@@ -65,18 +65,27 @@ def main():
     username = st.session_state.user_email
 
     # Top-right logout button
-    st.markdown(
-        """
-        <div style="position: fixed; top: 10px; right: 20px; z-index: 9999;">
-            <form action="?logout" method="post">
-                <button style="background-color: #f44336; color: white; border: none; padding: 5px 12px; border-radius: 5px; cursor: pointer;">
-                    Logout
-                </button>
-            </form>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+   st.markdown(
+    """
+    <div style="position: fixed; top: 25px; right: 30px; z-index: 9999;">
+        <form action="?logout" method="post">
+            <button style="
+                background-color: #f44336;
+                color: white;
+                border: none;
+                padding: 6px 14px;
+                border-radius: 6px;
+                font-size: 14px;
+                box-shadow: 0px 2px 5px rgba(0,0,0,0.2);
+                cursor: pointer;
+            ">
+                Logout
+            </button>
+        </form>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
     # Sidebar navigation
     with st.sidebar:
