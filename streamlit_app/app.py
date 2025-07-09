@@ -85,7 +85,7 @@ st.markdown(
     </div>
     """,
     unsafe_allow_html=True
-)
+    )
 
     # Sidebar navigation
     with st.sidebar:
