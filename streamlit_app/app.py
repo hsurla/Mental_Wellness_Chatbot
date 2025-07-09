@@ -64,46 +64,20 @@ def main():
 
     username = st.session_state.user_email
 
-    # ✅ Top-right corner Logout Button
-    st.markdown("""
-        <style>
-            .logout-button-container {
-                position: fixed;
-                top: 20px;
-                right: 30px;
-                z-index: 9999;
-            }
-            .logout-button-container button {
-                background-color: #e74c3c;
-                color: white;
-                border: none;
-                padding: 6px 14px;
-                border-radius: 5px;
-                font-size: 14px;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-                cursor: pointer;
-            }
-        </style>
-        <div class="logout-button-container">
-            <form action="" method="get">
-                <button type="submit" name="logout">Logout</button>
-            </form>
-        </div>
-    """, unsafe_allow_html=True)
-
-    # Handle logout
-    if st.query_params.get("logout") is not None:
-        st.session_state.clear()
-        st.success("Logged out successfully.")
-        st.query_params.clear()
-        st.rerun()
+    # Header with Logout button
+    col1, col2 = st.columns([10, 1])
+    with col2:
+        if st.button("Logout", key="logout_btn"):
+            st.session_state.clear()
+            st.success("Logged out successfully.")
+            st.rerun()
 
     # Sidebar navigation
     with st.sidebar:
         st.title(f"Hello, {username.split('@')[0]}!")
         page = st.radio(
             "Menu",
-            ["💬 Chatbot", "🧘 Wellness", "📚 Chat History", "👤 Profile"],
+            ["💬 Chatbot", "🧈 Wellness", "📚 Chat History", "👤 Profile"],
             label_visibility="collapsed"
         )
         st.markdown("---")
@@ -136,8 +110,8 @@ def main():
                 st.session_state.chat_history.append(("Bot", f"{response} (Mood: {emotion})", timestamp))
                 st.rerun()
 
-    elif page == "🧘 Wellness":
-        st.title("🧘 Wellness Center")
+    elif page == "🧈 Wellness":
+        st.title("🧈 Wellness Center")
 
         col1, col2 = st.columns(2)
         with col1:
