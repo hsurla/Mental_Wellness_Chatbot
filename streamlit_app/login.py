@@ -1,4 +1,3 @@
-# login.py
 import streamlit as st
 from google_auth_oauthlib.flow import Flow
 import requests
@@ -6,13 +5,39 @@ import requests
 # Configuration (REPLACE WITH YOURS)
 CLIENT_ID = "95879444252-7t052beum9527nbj32qbcan2h8i1caan.apps.googleusercontent.com"
 CLIENT_SECRET = "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"
-REDIRECT_URI = "http://localhost:8501"  # Must exactly match what you set in Google Cloud Console
+REDIRECT_URI = "http://localhost:8501"  # Must match Google Console
+
+# Dummy credentials (for demo purposes only – replace with secure auth in production)
+USER_CREDENTIALS = {
+    "demo_user": "demo_pass"
+}
 
 def login_page():
     if 'user_email' in st.session_state:
         return True
 
-    # Initialize OAuth2 Flow
+    st.subheader("🔐 Manual Sign-In")
+
+    # Manual Login Form
+    with st.form("manual_login_form"):
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+        submit = st.form_submit_button("Login")
+
+        if submit:
+            if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == password:
+                st.session_state.user_email = f"{username}@localapp"
+                st.success(f"Logged in as {username}")
+                st.rerun()
+                return True
+            else:
+                st.error("Invalid username or password")
+
+    st.markdown("---")
+
+    # Google Sign-In
+    st.subheader("🔓 Or sign in with Google")
+
     flow = Flow.from_client_config(
         {
             "web": {
@@ -31,10 +56,13 @@ def login_page():
         redirect_uri=REDIRECT_URI
     )
 
-    # Step 1: Show Login Button
-    params = st.experimental_get_query_params()
+    params = st.query_params
     if 'code' not in params:
-        auth_url, _ = flow.authorization_url(prompt="consent", access_type="offline", include_granted_scopes="true")
+        auth_url, _ = flow.authorization_url(
+            prompt="consent",
+            access_type="offline",
+            include_granted_scopes="true"
+        )
         st.markdown(f"""
         <a href="{auth_url}">
             <button style="
@@ -48,12 +76,11 @@ def login_page():
         """, unsafe_allow_html=True)
         return False
 
-    # Step 2: Handle Google Callback
+    # Handle Google OAuth callback
     try:
-        code = params['code'][0]
+        code = params['code']
         flow.fetch_token(code=code)
 
-        # Get user info from Google
         token = flow.credentials.token
         userinfo_resp = requests.get(
             "https://www.googleapis.com/oauth2/v3/userinfo",
@@ -66,9 +93,9 @@ def login_page():
             st.rerun()
             return True
         else:
-            st.error("Failed to fetch user info.")
+            st.error("Failed to fetch user info from Google.")
             return False
 
     except Exception as e:
-        st.error(f"Login failed: {e}")
+        st.error(f"Google Login failed: {e}")
         return False
