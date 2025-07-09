@@ -8,17 +8,19 @@ CLIENT_ID = "95879444252-71052beum9527nbj32qbcan2h8i1caan.apps.googleusercontent
 CLIENT_SECRET = "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"
 REDIRECT_URI = "http://localhost:8501"  # Or your deployed Streamlit URL
 
-from extra_streamlit_components import OAuth2Component
+from requests_oauthlib import OAuth2Session
 
-oauth2 = OAuth2Component(
-    client_id="YOUR_CLIENT_ID",
-    client_secret="YOUR_CLIENT_SECRET",
-    authroize_url="https://provider.com/auth",  # Check spelling ('authorize_url' vs 'authorization_url')
-    token_url="https://provider.com/token",
-    refresh_token_url="https://provider.com/refresh",
-    revoke_token_url="https://provider.com/revoke",
-    scope="openid email profile"
-)
+# OAuth2 Config
+CLIENT_ID = "your_client_id"
+AUTHORIZE_URL = "https://provider.com/oauth2/authorize"
+TOKEN_URL = "https://provider.com/oauth2/token"
+REDIRECT_URI = "http://localhost:8501"  # Must match provider settings
+SCOPE = ["openid", "email", "profile"]
+
+oauth = OAuth2Session(CLIENT_ID, redirect_uri=REDIRECT_URI, scope=SCOPE)
+auth_url, _ = oauth.authorization_url(AUTHORIZE_URL)
+
+st.markdown(f"[Login Here]({auth_url})")
 
 result = oauth2.authorize_button("Login with Provider")
 if result:
