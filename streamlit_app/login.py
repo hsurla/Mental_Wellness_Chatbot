@@ -1,81 +1,73 @@
 import streamlit as st
-import requests
-import bcrypt
 from streamlit_oauth import OAuth2Component
-from database.database import find_user, add_user
+import requests
 
-# ---- Google OAuth2 Setup ----
-CLIENT_ID = "95879444252-71052beum9527nbj32qbcan2h8i1caan.apps.googleusercontent.com"
-CLIENT_SECRET = "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"
-REDIRECT_URI = "http://localhost:8501"  # Or your deployed Streamlit URL
+# Google OAuth2 config
+client_id = "95879444252-7t052beum9527nbj32qbcan2h8i1caan.apps.googleusercontent.com"
+client_secret = "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"
+auth_url = "https://accounts.google.com/o/oauth2/auth"
+token_url = "https://oauth2.googleapis.com/token"
+redirect_uri = "http://localhost:8501"  # Must exactly match Google Console
 
+# Initialize OAuth2 component
 oauth2 = OAuth2Component(
-    client_id=CLIENT_ID,
-    client_secret=CLIENT_SECRET,
-    authorize_endpoint="https://accounts.google.com/o/oauth2/v2/auth",
-    token_endpoint="https://oauth2.googleapis.com/token"
+    client_id=client_id,
+    client_secret=client_secret,
+    authorize_endpoint=auth_url,
+    token_endpoint=token_url
 )
 
-def show_login_success(username):
-    st.balloons()
-    st.session_state["username"] = username
-    st.session_state["logged_in"] = True
-    st.session_state["show_login_badge"] = True
-    st.success(f"✅ Logged in as {username}")
-    st.rerun()
+# Temporary demo users
+USER_CREDENTIALS = {
+    "demo_user": "demo_pass"
+}
 
 def login_page():
-    if st.session_state.get("logged_in"):
-        st.success(f"✅ Already logged in as {st.session_state['username']}")
-        return
+    if 'user_email' in st.session_state:
+        return True
 
-    st.title("Login to Mental Wellness Chatbot")
+    st.title("🔐 Login")
 
-    # ---- Google OAuth Button ----
-    st.subheader("🔐 Sign in with Google")
-
-    token = oauth2.authorize_button(
-        name="Continue with Google",
-        redirect_uri=REDIRECT_URI,
-        scope=["openid", "email", "profile"],
-        access_type="offline",
-        prompt="consent"
-    )
-
-    if token and token.get("access_token"):
-        access_token = token["access_token"]
-        userinfo_response = requests.get(
-            "https://www.googleapis.com/oauth2/v2/userinfo",
-            headers={"Authorization": f"Bearer {access_token}"}
-        )
-        if userinfo_response.status_code == 200:
-            user_info = userinfo_response.json()
-            email = user_info.get("email")
-
-            # Register Google user if not already in DB
-            if not find_user(email):
-                add_user(email, "")  # Empty password
-
-            show_login_success(email)
-            return
-        else:
-            st.error("❌ Failed to retrieve user info.")
-
-    # ---- Manual login fallback ----
-    st.markdown("---")
-    st.subheader("👤 Or login manually")
-
-    with st.form("login_form"):
-        username = st.text_input("Username or Email")
+    # --- Manual Login Form ---
+    with st.form("manual_login_form"):
+        username = st.text_input("Username")
         password = st.text_input("Password", type="password")
         submitted = st.form_submit_button("Login")
 
         if submitted:
-            user = find_user(username)
-            if user:
-                if bcrypt.checkpw(password.encode(), user["password"].encode()):
-                    show_login_success(username)
-                else:
-                    st.error("❌ Incorrect password.")
+            if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == password:
+                st.session_state.user_email = f"{username}@localapp"
+                st.success("Logged in successfully.")
+                st.rerun()
             else:
-                st.error("❌ User not found.")
+                st.error("Invalid username or password.")
+
+    st.markdown("---")
+
+    # --- Google Login ---
+    st.subheader("Or sign in with Google")
+
+    token = oauth2.authorize_button(
+        name="Continue with Google",
+        redirect_uri=redirect_uri,
+        scope=[
+            "openid",
+            "https://www.googleapis.com/auth/userinfo.email",
+            "https://www.googleapis.com/auth/userinfo.profile"
+        ]
+    )
+
+    if token:
+        userinfo = requests.get(
+            "https://www.googleapis.com/oauth2/v3/userinfo",
+            headers={"Authorization": f"Bearer {token['access_token']}"}
+        ).json()
+
+        if "email" in userinfo:
+            st.session_state.user_email = userinfo["email"]
+            st.success(f"Logged in as {userinfo['email']}")
+            st.rerun()
+        else:
+            st.error("Failed to fetch user info from Google.")
+
+    return False
