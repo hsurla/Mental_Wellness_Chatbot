@@ -11,13 +11,7 @@ from datetime import datetime
 import text2emotion as te
 import random
 import requests
-from streamlit_app.login import login_page
-from streamlit_app.register import registration_page
-from streamlit_app.sidebar import sidebar
-from database.database import get_chat_history
-from streamlit_app.wellness import wellness_page
-from streamlit_app.profile import profile_page
-from streamlit_app.fun_support import get_fun_activity, get_healthy_snack
+
 
 sia = SentimentIntensityAnalyzer()
 
