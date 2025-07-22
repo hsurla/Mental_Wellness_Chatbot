@@ -4,7 +4,13 @@ import time
 import requests
 import os
 from login import login_page
-from database.database import get_chat_history
+from database.database import (
+    get_chat_history,
+    save_journal_entry,
+    get_journal_entries,
+    update_journal_entry,
+    delete_journal_entry
+)
 import random
 
 # Set page config
@@ -55,21 +61,17 @@ def profile_page(username):
         )
 
 def main():
-    # Allow insecure HTTP (for localhost testing)
     os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
-
-    # Check login
     if not login_page():
-        return  # Wait until login is complete
+        return
 
     username = st.session_state.user_email
 
-    # Sidebar navigation
     with st.sidebar:
         st.title(f"Hello, {username.split('@')[0]}!")
         page = st.radio(
             "Menu",
-            ["💬 Chatbot", "🧈 Wellness", "📚 Chat History", "👤 Profile", "🚪 Logout"],
+            ["💬 Chatbot", "🧈 Wellness", "📚 Chat History", "📔 Journal", "👤 Profile", "🚪 Logout"],
             label_visibility="collapsed"
         )
         st.markdown("---")
@@ -81,10 +83,8 @@ def main():
             else:
                 st.write(joke.get("joke", "Why don't scientists trust atoms? Because they make up everything!"))
 
-    # Page content
     if page == "💬 Chatbot":
         st.title("💬 Mental Wellness Chatbot")
-
         if "chat_history" not in st.session_state:
             st.session_state.chat_history = []
 
@@ -133,6 +133,44 @@ def main():
         else:
             st.info("No chat history yet")
 
+    elif page == "📔 Journal":
+        st.title("📔 Your Personal Journal")
+
+        st.markdown("Write down anything you're feeling or thinking.")
+        journal_text = st.text_area("New Entry", placeholder="Start writing here...")
+
+        if st.button("Save Entry"):
+            if journal_text.strip():
+                save_journal_entry(username, journal_text.strip())
+                st.success("Entry saved successfully!")
+                st.rerun()
+            else:
+                st.warning("Entry cannot be empty.")
+
+        st.markdown("### 📚 Previous Entries")
+        entries = get_journal_entries(username)
+
+        if not entries:
+            st.info("No journal entries yet.")
+        else:
+            for entry in reversed(entries):
+                entry_id = str(entry.get("_id"))
+                time_sent = entry.get("timestamp", "")
+                text = entry.get("text", "")
+                with st.expander(f"🕒 {time_sent}"):
+                    edited_text = st.text_area("Edit entry", value=text, key=entry_id)
+                    col1, col2 = st.columns([1, 1])
+                    with col1:
+                        if st.button("Update", key=f"update_{entry_id}"):
+                            update_journal_entry(username, entry_id, edited_text)
+                            st.success("Entry updated.")
+                            st.rerun()
+                    with col2:
+                        if st.button("Delete", key=f"delete_{entry_id}"):
+                            delete_journal_entry(username, entry_id)
+                            st.warning("Entry deleted.")
+                            st.rerun()
+
     elif page == "👤 Profile":
         profile_page(username)
 
@@ -140,7 +178,7 @@ def main():
         st.session_state.clear()
         st.success("Logged out successfully!")
         time.sleep(1)
-        st.query_params.clear()  # ✅ Clears ?code= from URL
+        st.query_params.clear()
         st.rerun()
 
 if __name__ == "__main__":
