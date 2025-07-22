@@ -2,13 +2,14 @@ import streamlit as st
 from streamlit_oauth import OAuth2Component
 import requests
 
-# Google OAuth2 Configuration
+# Configuration
 client_id = "YOUR_CLIENT_ID"
 client_secret = "YOUR_CLIENT_SECRET"
 auth_url = "https://accounts.google.com/o/oauth2/auth"
 token_url = "https://oauth2.googleapis.com/token"
-redirect_uri = "http://localhost:8501"  # Must match in Google Cloud Console
+redirect_uri = "http://localhost:8501"
 
+# Initialize
 oauth2 = OAuth2Component(
     client_id=client_id,
     client_secret=client_secret,
@@ -26,6 +27,7 @@ def login_page():
 
     st.title("🔐 Login")
 
+    # Manual login
     with st.form("manual_login_form"):
         username = st.text_input("Username")
         password = st.text_input("Password", type="password")
@@ -42,29 +44,34 @@ def login_page():
     st.markdown("---")
     st.subheader("Or sign in with Google")
 
-    # Styled authorize button
-    with st.container():
-        token = oauth2.authorize_button(
-            name="Log in with Google",
-            redirect_uri=redirect_uri,
-            scope="openid https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile",
-            style={
-                "padding": "12px 24px",
-                "border-radius": "10px",
-                "border": "1px solid #555",
-                "display": "flex",
-                "align-items": "center",
-                "gap": "10px",
-                "font-weight": "600",
-                "justify-content": "center",
-                "width": "100%",
-                "color": "white",
-                "background-color": "#111"
-            },
-            icon_url="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-        )
+    # Display styled wrapper
+    st.markdown("""
+        <style>
+        .google-button-container button {
+            background-color: #111 !important;
+            color: white !important;
+            border-radius: 10px;
+            padding: 12px 24px;
+            font-weight: 600;
+            border: 1px solid #555;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        </style>
+        <div class="google-button-container">
+    """, unsafe_allow_html=True)
 
-    # Process OAuth token
+    # Place OAuth2 button inside styled container
+    token = oauth2.authorize_button(
+        name="Log in with Google",
+        redirect_uri=redirect_uri,
+        scope="openid https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile"
+    )
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
     if token:
         if 'token' in token and 'access_token' in token['token']:
             access_token = token['token']['access_token']
