@@ -48,34 +48,43 @@ def login_page():
     # --- Google Styled Login Button ---
     with st.container():
         custom_html = """
-        <style>
-            .google-btn {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 8px;
-                background-color: transparent;
-                color: white;
-                border: 1px solid rgba(255, 255, 255, 0.2);
-                padding: 10px 20px;
-                border-radius: 8px;
-                cursor: pointer;
-                font-weight: 500;
-                text-align: center;
-                transition: background-color 0.3s;
-            }
-            .google-btn:hover {
-                background-color: rgba(255, 255, 255, 0.05);
-            }
-            .google-btn img {
-                height: 18px;
-            }
-        </style>
-        <div class="google-btn">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Google_%22G%22_Logo.svg/512px-Google_%22G%22_Logo.svg.png">
-            <span>Log in with Google</span>
-        </div>
-        """
+<style>
+    .google-btn-wrapper {
+        display: flex;
+        justify-content: center;
+        margin-top: 10px;
+        margin-bottom: 10px;
+    }
+    .google-btn {
+        background-color: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+        color: white;
+        font-weight: 500;
+        padding: 10px 20px;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+    .google-btn:hover {
+        background-color: rgba(255,255,255,0.05);
+    }
+    .google-btn img {
+        width: 18px;
+        height: 18px;
+    }
+</style>
+<div class="google-btn-wrapper">
+    <div class="google-btn">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google Logo">
+        <span>Log in with Google</span>
+    </div>
+</div>
+"""
+
         st.markdown(custom_html, unsafe_allow_html=True)
 
         # OAuth2 Button (Invisible to customize placement)
