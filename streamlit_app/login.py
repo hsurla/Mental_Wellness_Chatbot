@@ -1,7 +1,6 @@
 import streamlit as st
 from streamlit_oauth import OAuth2Component
 import requests
-import urllib.parse
 
 # Google OAuth2 Configuration
 client_id = "YOUR_CLIENT_ID"
@@ -10,7 +9,6 @@ auth_url = "https://accounts.google.com/o/oauth2/auth"
 token_url = "https://oauth2.googleapis.com/token"
 redirect_uri = "http://localhost:8501"  # Must match in Google Cloud Console
 
-# Initialize OAuth2 component
 oauth2 = OAuth2Component(
     client_id=client_id,
     client_secret=client_secret,
@@ -18,84 +16,72 @@ oauth2 = OAuth2Component(
     token_endpoint=token_url
 )
 
+USER_CREDENTIALS = {
+    "demo_user": "demo_pass"
+}
+
 def login_page():
-    if "user_email" in st.session_state:
+    if 'user_email' in st.session_state:
         return True
 
     st.title("🔐 Login")
 
-    # Manual login
     with st.form("manual_login_form"):
         username = st.text_input("Username")
         password = st.text_input("Password", type="password")
         submitted = st.form_submit_button("Login")
+
         if submitted:
-            if username == "admin" and password == "pass":
+            if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == password:
                 st.session_state.user_email = f"{username}@local"
                 st.success("Logged in successfully.")
                 st.rerun()
             else:
-                st.error("Invalid credentials")
+                st.error("Invalid username or password.")
 
-    # Google login section
     st.markdown("---")
-    st.subheader("Or login with Google")
+    st.subheader("Or sign in with Google")
 
-    # Step 1: Generate the OAuth login URL
-    login_url = (
-        f"{auth_url}?response_type=code"
-        f"&client_id={client_id}"
-        f"&redirect_uri={urllib.parse.quote(redirect_uri, safe='')}"
-        f"&scope={urllib.parse.quote('openid email profile')}"
-        f"&access_type=offline"
-        f"&prompt=consent"
-    )
+    # Styled authorize button
+    with st.container():
+        token = oauth2.authorize_button(
+            name="Log in with Google",
+            redirect_uri=redirect_uri,
+            scope="openid https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile",
+            style={
+                "padding": "12px 24px",
+                "border-radius": "10px",
+                "border": "1px solid #555",
+                "display": "flex",
+                "align-items": "center",
+                "gap": "10px",
+                "font-weight": "600",
+                "justify-content": "center",
+                "width": "100%",
+                "color": "white",
+                "background-color": "#111"
+            },
+            icon_url="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+        )
 
-    # Step 2: Custom-styled button
-    st.markdown(f"""
-    <style>
-        .google-btn {{
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            padding: 10px 16px;
-            background-color: transparent;
-            color: white;
-            font-weight: bold;
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 8px;
-            text-decoration: none;
-        }}
-        .google-btn:hover {{
-            background-color: rgba(255,255,255,0.05);
-        }}
-        .google-btn img {{
-            width: 18px;
-            height: 18px;
-        }}
-    </style>
-    <div style="text-align: center; margin-top: 10px;">
-        <a href="{login_url}" class="google-btn">
-            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg">
-            Log in with Google
-        </a>
-    </div>
-    """, unsafe_allow_html=True)
+    # Process OAuth token
+    if token:
+        if 'token' in token and 'access_token' in token['token']:
+            access_token = token['token']['access_token']
+            userinfo = requests.get(
+                "https://www.googleapis.com/oauth2/v3/userinfo",
+                headers={"Authorization": f"Bearer {access_token}"}
+            ).json()
 
-    # Step 3: Handle redirected token
-    token = oauth2.get_access_token(redirect_uri=redirect_uri)
-    if token and "access_token" in token:
-        userinfo = requests.get(
-            "https://www.googleapis.com/oauth2/v3/userinfo",
-            headers={"Authorization": f"Bearer {token['access_token']}"}
-        ).json()
-
-        if "email" in userinfo:
-            st.session_state.user_email = userinfo["email"]
-            st.success(f"Logged in as {userinfo['email']}")
-            st.rerun()
+            if "email" in userinfo:
+                st.session_state.user_email = userinfo["email"]
+                st.success(f"Logged in as {userinfo['email']}")
+                st.rerun()
+            else:
+                st.error("Failed to fetch user info from Google.")
         else:
-            st.error("Could not fetch Google user info.")
+            st.error("Google login failed.")
+            if "error" in token:
+                st.error(f"OAuth Error: {token['error']}")
 
     return False
