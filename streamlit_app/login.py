@@ -7,7 +7,7 @@ client_id = "YOUR_CLIENT_ID"
 client_secret = "YOUR_CLIENT_SECRET"
 auth_url = "https://accounts.google.com/o/oauth2/auth"
 token_url = "https://oauth2.googleapis.com/token"
-redirect_uri = "http://localhost:8501"
+redirect_uri = "http://localhost:8502"
 
 # Initialize
 oauth2 = OAuth2Component(
