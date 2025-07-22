@@ -26,6 +26,9 @@ def login_page():
     if 'user_email' in st.session_state:
         return True
 
+        st.markdown("---")
+    st.subheader("Or sign in with Google")
+
     # ✅ Try OAuth token first
     token = oauth2.authorize_button(
         name="Continue with Google",
@@ -68,7 +71,6 @@ def login_page():
             else:
                 st.error("Invalid username or password.")
 
-    st.markdown("---")
-    st.subheader("Or sign in with Google")
+   
 
     return False
