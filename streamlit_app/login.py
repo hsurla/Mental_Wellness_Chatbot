@@ -3,8 +3,8 @@ from streamlit_oauth import OAuth2Component
 import requests
 
 # Configuration
-client_id = "95879444252- 7t052beum9527nbj32qbcan2h8i1caan.a pps.googleusercontent.com"
-client_secret = "GOCSPX- 1_.6TTdSSLSc7wknzX5V7nRIDbPWK"
+client_id = "95879444252-7t052beum9527nbj32qbcan2h8i1caan.a pps.googleusercontent.com"
+client_secret = "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"
 auth_url = "https://accounts.google.com/o/oauth2/auth"
 token_url = "https://oauth2.googleapis.com/token"
 redirect_uri = "http://localhost:8501"
