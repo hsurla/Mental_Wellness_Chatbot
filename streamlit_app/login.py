@@ -101,10 +101,10 @@ def login_page():
 
     st.title("🔐 Login")
 
-    # Create custom CSS for the integrated button/link
+    # Custom CSS for the layout
     st.markdown("""
     <style>
-    .forgot-password-container {
+    .login-form-footer {
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -120,9 +120,6 @@ def login_page():
         color: #444;
         text-decoration: underline;
     }
-    .login-button {
-        margin-left: auto;
-    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -131,33 +128,31 @@ def login_page():
         username = st.text_input("Username")
         password = st.text_input("Password", type="password")
         
-        # Custom container for login button and forgot password
+        # Form footer with login button and forgot password
         st.markdown("""
-        <div class="forgot-password-container">
-            <span class="forgot-password-link" onclick="this.parentNode.querySelector('button').click()">
+        <div class="login-form-footer">
+            <span class="forgot-password-link" onclick="this.nextElementSibling.click()">
                 Forgot password?
             </span>
-            <button type="submit" class="login-button">Login</button>
+            <button type="submit" style="display: none;"></button>
         </div>
         """, unsafe_allow_html=True)
         
-        # Hidden button to trigger forgot password
-        forgot_clicked = st.form_submit_button(" ", key="forgot_hidden", help="Forgot password")
+        login_clicked = st.form_submit_button("Login")
+        forgot_clicked = st.form_submit_button(" ")  # Hidden button
         
         if forgot_clicked:
             st.session_state.show_forgot_password = True
             st.rerun()
-
-    # Handle form submission
-    if st.session_state.get("login_form_submitted", False):
-        st.session_state.login_form_submitted = False
-        user = USERS_DB.get(st.session_state.login_username)
-        if user and user["password"] == st.session_state.login_password:
-            st.session_state.user_email = user["email"]
-            st.success("Logged in successfully!")
-            st.rerun()
-        else:
-            st.error("Invalid username or password")
+        
+        if login_clicked:
+            user = USERS_DB.get(username)
+            if user and user["password"] == password:
+                st.session_state.user_email = user["email"]
+                st.success("Logged in successfully!")
+                st.rerun()
+            else:
+                st.error("Invalid username or password")
 
     # Show forgot password form if triggered
     if st.session_state.get("show_forgot_password", False):
