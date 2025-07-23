@@ -5,8 +5,8 @@ import secrets
 from datetime import datetime, timedelta
 
 # Configuration
-CLIENT_ID = "95879444252-7t052beum9527nbj32qbcan2h8i1caan.apps.googleusercontent.com"
-CLIENT_SECRET = "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"
+CLIENT_ID = "your-client-id.apps.googleusercontent.com"
+CLIENT_SECRET = "your-client-secret"
 REDIRECT_URI = "http://localhost:8501"
 AUTH_URL = "https://accounts.google.com/o/oauth2/auth"
 TOKEN_URL = "https://oauth2.googleapis.com/token"
@@ -101,7 +101,7 @@ def login_page():
 
     st.title("🔐 Login")
 
-    # Custom CSS for the layout
+    # Custom CSS for the login form footer
     st.markdown("""
     <style>
     .login-form-footer {
@@ -128,18 +128,21 @@ def login_page():
         username = st.text_input("Username")
         password = st.text_input("Password", type="password")
         
-        # Form footer with login button and forgot password
-        st.markdown("""
-        <div class="login-form-footer">
-            <span class="forgot-password-link" onclick="this.nextElementSibling.click()">
-                Forgot password?
-            </span>
-            <button type="submit" style="display: none;"></button>
-        </div>
-        """, unsafe_allow_html=True)
+        # Form footer with both elements in one line
+        col1, col2 = st.columns([4, 1])
+        with col1:
+            st.markdown("""
+            <div class="login-form-footer">
+                <span class="forgot-password-link" onclick="document.getElementById('forgot-btn').click()">
+                    Forgot password?
+                </span>
+            </div>
+            """, unsafe_allow_html=True)
+        with col2:
+            login_clicked = st.form_submit_button("Login")
         
-        login_clicked = st.form_submit_button("Login")
-        forgot_clicked = st.form_submit_button(" ")  # Hidden button
+        # Hidden button for forgot password functionality
+        forgot_clicked = st.form_submit_button(" ", key="forgot-btn")
         
         if forgot_clicked:
             st.session_state.show_forgot_password = True
@@ -156,8 +159,7 @@ def login_page():
 
     # Show forgot password form if triggered
     if st.session_state.get("show_forgot_password", False):
-        with st.container():
-            st.markdown("---")
+        with st.expander("Reset Password", expanded=True):
             show_forgot_password_form()
         return False
 
