@@ -2,22 +2,21 @@ import streamlit as st
 from streamlit_oauth import OAuth2Component
 import os
 
-# (Optional) Load from environment variables
+# Optional: Use dotenv if you prefer to load secrets from a .env file
 # from dotenv import load_dotenv
 # load_dotenv()
 
-# Google OAuth2 Configuration
-client_id = os.getenv("95879444252-7t052beum9527nbj32qbcan2h8i1caan.apps.googleusercontent.com")
-client_secret = os.getenv("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")
-redirect_uri = "http://localhost:8501"  # Update if deployed
+# Replace with your actual client ID and secret (or use environment variables)
+client_id = "95879444252-7t052beum9527nbj32qbcan2h8i1caan.apps.googleusercontent.com"
+client_secret = "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"
+redirect_uri = "http://localhost:8501"  # or your deployed URL
 
-# OAuth2 Component setup
+# Create OAuth2 instance without revoke_endpoint
 oauth = OAuth2Component(
     client_id=client_id,
     client_secret=client_secret,
     authorize_endpoint="https://accounts.google.com/o/oauth2/v2/auth",
     token_endpoint="https://oauth2.googleapis.com/token",
-    revoke_endpoint="https://oauth2.googleapis.com/revoke",
     redirect_uri=redirect_uri,
     scope="openid email profile",
 )
@@ -25,18 +24,18 @@ oauth = OAuth2Component(
 def login_page():
     st.title("🧠 Mental Wellness Chatbot Login")
 
-    # Initialize session state
+    # Session initialization
     if "user" not in st.session_state:
         st.session_state.user = None
     if "forgot_mode" not in st.session_state:
         st.session_state.forgot_mode = False
 
-    # If already logged in
+    # ✅ Logged in already
     if st.session_state.user:
         st.success(f"✅ Logged in as {st.session_state.user['email']}")
         return True
 
-    # Forgot password form
+    # 🔐 Forgot Password View
     if st.session_state.forgot_mode:
         st.subheader("🔐 Forgot Password")
         with st.form("forgot_password_form"):
@@ -45,7 +44,7 @@ def login_page():
 
         if reset_btn:
             if forgot_email:
-                st.success(f"Reset link sent to {forgot_email} (simulated).")
+                st.success(f"Password reset link sent to {forgot_email} (simulated).")
                 st.session_state.forgot_mode = False
             else:
                 st.error("Please enter your email.")
@@ -53,7 +52,7 @@ def login_page():
             st.session_state.forgot_mode = False
         return False
 
-    # Google OAuth login
+    # 🌐 Google OAuth Login Button
     st.subheader("Login using Google")
     token = oauth.authorize_button(
         name="Continue with Google",
