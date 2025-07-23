@@ -3,18 +3,6 @@ from streamlit_oauth import OAuth2Component
 import requests
 import secrets
 from datetime import datetime, timedelta
-from pymongo import MongoClient
-
-# MongoDB Connection
-try:
-    client = MongoClient("mongodb://localhost:27017/")
-    db = client["mental_wellness_db"]
-    users_collection = db["users"]
-    reset_tokens_collection = db["reset_tokens"]
-    st.success("Connected to MongoDB successfully!")
-except Exception as e:
-    st.error(f"Could not connect to MongoDB: {e}")
-    st.stop()
 
 # Configuration
 CLIENT_ID = "95879444252-7t052beum9527nbj32qbcan2h8i1caan.apps.googleusercontent.com"
