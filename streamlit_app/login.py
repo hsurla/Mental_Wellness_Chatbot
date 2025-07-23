@@ -1,11 +1,11 @@
 import streamlit as st
 from streamlit_oauth import OAuth2Component
-import os
 
 # Google OAuth2 credentials
 client_id = "YOUR_GOOGLE_CLIENT_ID"
 client_secret = "YOUR_GOOGLE_CLIENT_SECRET"
 
+# Initialize OAuth2
 oauth = OAuth2Component(
     client_id=client_id,
     client_secret=client_secret,
@@ -13,45 +13,60 @@ oauth = OAuth2Component(
     token_endpoint="https://oauth2.googleapis.com/token",
 )
 
-redirect_uri = "http://localhost:8501"
+redirect_uri = "http://localhost:8501"  # or your deployed URL
 
-# Dummy user database for email/password (for example/demo only)
+# Dummy users dictionary: username → password
 dummy_users = {
-    "user@example.com": "password123",
-    "test@wellness.com": "mental123"
+    "jaswanth": "test123",
+    "wellness_user": "calm456"
 }
 
 def login_page():
-    st.title("🧠 Mental Wellness Chatbot Login")
+    st.markdown("<h1 style='text-align: center;'>🔐 Login</h1>", unsafe_allow_html=True)
 
     if "user" not in st.session_state:
         st.session_state.user = None
-    if "forgot_mode" not in st.session_state:
-        st.session_state.forgot_mode = False
 
-    # ✅ Already logged in
     if st.session_state.user:
-        st.success(f"✅ Logged in as {st.session_state.user['email']}")
+        st.success(f"✅ Logged in as {st.session_state.user['username']}")
         return True
 
-    # 🔐 Forgot Password Mode
-    if st.session_state.forgot_mode:
-        st.subheader("🔐 Forgot Password")
-        with st.form("forgot_password_form"):
-            forgot_email = st.text_input("Enter your registered email")
-            reset_btn = st.form_submit_button("Send Reset Link")
-        if reset_btn:
-            if forgot_email:
-                st.success(f"Password reset link sent to {forgot_email} (simulated).")
-                st.session_state.forgot_mode = False
-            else:
-                st.error("Please enter your email.")
-        if st.button("🔙 Back to Login"):
-            st.session_state.forgot_mode = False
-        return False
+    # Layout: Login (left) | Forgot Password (right)
+    col1, col2 = st.columns([2, 1])
 
-    # 🔵 Google OAuth Login
-    st.subheader("Login with Google")
+    # 🔹 LEFT: Username/Password Login
+    with col1:
+        with st.form("manual_login_form"):
+            st.subheader("Login with Username")
+            username = st.text_input("Username")
+            password = st.text_input("Password", type="password")
+            login_btn = st.form_submit_button("Login")
+
+        if login_btn:
+            if username in dummy_users and dummy_users[username] == password:
+                st.success(f"✅ Logged in as {username}")
+                st.session_state.user = {"username": username, "method": "manual"}
+                return True
+            else:
+                st.error("Invalid username or password.")
+
+    # 🔹 RIGHT: Forgot Password
+    with col2:
+        st.subheader("Forgot Password?")
+        with st.form("forgot_password_form"):
+            forgot_username = st.text_input("Enter your username")
+            reset_btn = st.form_submit_button("Send Reset Link")
+
+        if reset_btn:
+            if forgot_username:
+                st.success(f"Password reset link sent to {forgot_username} (simulated).")
+            else:
+                st.error("Please enter your username.")
+
+    # 🔽 Divider and Google login
+    st.markdown("---")
+    st.subheader("👇 Or Continue with Google")
+
     token = oauth.authorize_button(
         name="Continue with Google",
         icon="🌐",
@@ -63,31 +78,11 @@ def login_page():
     if token:
         userinfo = oauth.get_user_info(token)
         if userinfo and "email" in userinfo:
-            st.session_state.user = userinfo
-            st.success(f"✅ Logged in as {userinfo['email']}")
+            username = userinfo.get("email").split("@")[0]  # Use prefix as username
+            st.session_state.user = {"username": username, "email": userinfo["email"], "method": "google"}
+            st.success(f"✅ Logged in as {username}")
             return True
         else:
-            st.error("Login failed. Could not fetch user info.")
-
-    # 🔶 Manual Email/Password Login
-    st.subheader("Or login manually")
-
-    with st.form("manual_login_form"):
-        email = st.text_input("Email")
-        password = st.text_input("Password", type="password")
-        login_btn = st.form_submit_button("Login")
-
-    if login_btn:
-        if email in dummy_users and dummy_users[email] == password:
-            st.success(f"✅ Logged in as {email}")
-            st.session_state.user = {"email": email, "method": "manual"}
-            return True
-        else:
-            st.error("Invalid email or password.")
-
-    # Forgot password link
-    st.markdown("🔒 Forgot your password?")
-    if st.button("Reset via Email"):
-        st.session_state.forgot_mode = True
+            st.error("Google login failed.")
 
     return False
