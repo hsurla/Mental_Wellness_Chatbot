@@ -2,23 +2,20 @@ import streamlit as st
 from streamlit_oauth import OAuth2Component
 import os
 
-# Optional: load from .env
-# from dotenv import load_dotenv
-# load_dotenv()
+# Google OAuth2 credentials
+client_id = "95879444252-7t052beum9527nbj32qbcan2h8i1caan.apps.googleusercontent.com"
+client_secret = "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"
 
-client_id= "95879444252-7t052beum9527nbj32qbcan2h8i1caan.apps.googleusercontent.com"
-client_secret= "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"
-# ✅ DO NOT pass `redirect_uri` to OAuth2Component in this version
+# Set up OAuth2Component with only accepted arguments
 oauth = OAuth2Component(
     client_id=client_id,
     client_secret=client_secret,
     authorize_endpoint="https://accounts.google.com/o/oauth2/v2/auth",
     token_endpoint="https://oauth2.googleapis.com/token",
-    scope="openid email profile"
 )
 
-# Define redirect URI separately (for the authorize_button)
-redirect_uri = "http://localhost:8501"  # Or your deployed URL
+# Define redirect_uri separately (used in authorize_button)
+redirect_uri = "http://localhost:8501"  # Change if deployed
 
 def login_page():
     st.title("🧠 Mental Wellness Chatbot Login")
@@ -49,11 +46,12 @@ def login_page():
 
     st.subheader("Login using Google")
 
-    # ✅ Pass redirect_uri HERE instead
+    # Pass scope and redirect_uri here
     token = oauth.authorize_button(
         name="Continue with Google",
         icon="🌐",
         redirect_uri=redirect_uri,
+        scope="openid email profile",
         use_container_width=True
     )
 
