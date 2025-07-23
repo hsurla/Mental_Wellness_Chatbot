@@ -1,23 +1,27 @@
 import streamlit as st
 from streamlit_oauth import OAuth2Component
 import requests
+import smtplib
+from datetime import datetime, timedelta
+import secrets
 
-# Configuration
-client_id = "95879444252-7t052beum9527nbj32qbcan2h8i1caan.apps.googleusercontent.com"
-client_secret = "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"
-auth_url = "https://accounts.google.com/o/oauth2/auth"
-token_url = "https://oauth2.googleapis.com/token"
-redirect_uri = "http://localhost:8501"
+# ===== Configuration =====
+CLIENT_ID = "95879444252-7t052beum9527nbj32qbcan2h8i1caan.apps.googleusercontent.com"
+CLIENT_SECRET = "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"
+REDIRECT_URI = "http://localhost:8501"  # Must match Google Cloud Console
+AUTH_URL = "https://accounts.google.com/o/oauth2/auth"
+TOKEN_URL = "https://oauth2.googleapis.com/token"
+# ========================
 
-# Initialize
+# Initialize OAuth
 oauth2 = OAuth2Component(
-    client_id=client_id,
-    client_secret=client_secret,
-    authorize_endpoint=auth_url,
-    token_endpoint=token_url
+    client_id=CLIENT_ID,
+    client_secret=CLIENT_SECRET,
+    authorize_endpoint=AUTH_URL,
+    token_endpoint=TOKEN_URL
 )
 
-# Mock user database
+# Mock user database (replace with real DB in production)
 USER_CREDENTIALS = {
     "demo_user": {
         "password": "demo_pass",
@@ -26,9 +30,11 @@ USER_CREDENTIALS = {
     }
 }
 
+# Password reset token storage (in-memory for demo)
 RESET_TOKENS = {}
 
 def generate_reset_token(email):
+    """Generate a secure token with 1-hour expiry"""
     token = secrets.token_urlsafe(32)
     expires = datetime.now() + timedelta(hours=1)
     RESET_TOKENS[token] = {
@@ -38,10 +44,20 @@ def generate_reset_token(email):
     return token
 
 def send_reset_email(email, token):
+    """Mock email sending function"""
     reset_link = f"{REDIRECT_URI}?token={token}"
     print(f"[DEMO] Password reset link for {email}: {reset_link}")
+    # Uncomment for real email sending:
+    """
+    message = f"Subject: Password Reset\n\nClick to reset: {reset_link}"
+    with smtplib.SMTP("your-smtp-server.com", 587) as server:
+        server.starttls()
+        server.login("your-email@example.com", "email-password")
+        server.sendmail("noreply@example.com", email, message)
+    """
 
 def show_forgot_password():
+    """Forgot password form with email input"""
     with st.form("forgot_password_form"):
         st.subheader("🔒 Reset Your Password")
         email = st.text_input("Enter your registered email")
@@ -55,7 +71,9 @@ def show_forgot_password():
                 st.rerun()
         
         if submit and email:
+            # Check if email exists
             user_exists = any(user["email"] == email for user in USER_CREDENTIALS.values())
+            
             if user_exists:
                 token = generate_reset_token(email)
                 send_reset_email(email, token)
@@ -66,7 +84,7 @@ def show_forgot_password():
                 st.error("No account found with that email")
 
 def handle_password_reset():
-    # Updated to use st.query_params instead of st.experimental_get_query_params
+    """Process password reset from URL token"""
     if "token" in st.query_params:
         token = st.query_params["token"]
         
@@ -81,6 +99,7 @@ def handle_password_reset():
                     
                     if st.form_submit_button("Update Password"):
                         if new_password == confirm_password:
+                            # Update password in mock database
                             for username, data in USER_CREDENTIALS.items():
                                 if data["email"] == email:
                                     USER_CREDENTIALS[username]["password"] = new_password
@@ -99,6 +118,8 @@ def handle_password_reset():
             st.error("Invalid reset link")
 
 def login_page():
+    """Main login page with both manual and Google auth"""
+    # Handle password reset from URL
     if not st.session_state.get("password_reset_done", False):
         handle_password_reset()
     
@@ -107,10 +128,12 @@ def login_page():
 
     st.title("🔐 Login")
 
+    # Manual login form
     with st.form("manual_login_form"):
         username = st.text_input("Username")
         password = st.text_input("Password", type="password")
         
+        # Forgot password link
         st.markdown(
             """<div style="text-align: right; margin-top: -15px;">
             <a href="#" onclick="window.streamlitSessionState.set('show_forgot_password', true); return false;">
@@ -129,6 +152,7 @@ def login_page():
             else:
                 st.error("Invalid username or password.")
 
+    # Show forgot password form if triggered
     if st.session_state.get("show_forgot_password", False):
         show_forgot_password()
         return False
@@ -136,9 +160,10 @@ def login_page():
     st.markdown("---")
     st.subheader("Or sign in with Google")
 
+    # Google OAuth button
     token = oauth2.authorize_button(
         name="Log in with Google",
-        redirect_uri=REDIRECT_URI,
+        redirect_uri=REDIRECT_URI,  # Now properly defined
         scope="openid email profile"
     )
 
