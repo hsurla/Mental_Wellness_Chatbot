@@ -31,6 +31,31 @@ def login_page():
     with st.form("manual_login_form"):
         username = st.text_input("Username")
         password = st.text_input("Password", type="password")
+        
+        # Forgot password section (hidden by default)
+        if st.session_state.get("show_forgot_password", False):
+            st.markdown("---")
+            st.subheader("🔒 Password Recovery")
+            recovery_email = st.text_input("Enter your email")
+            
+            col1, col2 = st.columns([1, 3])
+            with col1:
+                if st.button("Send Reset Link"):
+                    # Mock password reset functionality
+                    st.success(f"Reset link sent to {recovery_email} (demo)")
+                    st.session_state.show_forgot_password = False
+            with col2:
+                if st.button("Cancel"):
+                    st.session_state.show_forgot_password = False
+        else:
+            # Forgot password link
+            st.markdown(
+                """<div style="text-align: right; margin-top: -15px;">
+                <a href="#" onclick="window.streamlitSessionState.set('show_forgot_password', true); return false;">
+                Forgot password?</a></div>""",
+                unsafe_allow_html=True
+            )
+        
         submitted = st.form_submit_button("Login")
 
         if submitted:
@@ -58,6 +83,11 @@ def login_page():
             align-items: center;
             justify-content: center;
             gap: 10px;
+        }
+        .forgot-password-link {
+            color: #888;
+            font-size: 0.9em;
+            cursor: pointer;
         }
         </style>
         <div class="google-button-container">
