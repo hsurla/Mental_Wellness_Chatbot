@@ -4,9 +4,21 @@ import requests
 import secrets
 from datetime import datetime, timedelta
 from pymongo import MongoClient
+
+# MongoDB Connection
+try:
+    client = MongoClient("mongodb://localhost:27017/")
+    db = client["mental_wellness_db"]
+    users_collection = db["users"]
+    reset_tokens_collection = db["reset_tokens"]
+    st.success("Connected to MongoDB successfully!")
+except Exception as e:
+    st.error(f"Could not connect to MongoDB: {e}")
+    st.stop()
+
 # Configuration
-CLIENT_ID = "95879444252-7t052beum9527nbj32qbcan2h8i1caan.apps.googleusercontent.com"
-CLIENT_SECRET = "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"
+CLIENT_ID = "your-client-id.apps.googleusercontent.com"
+CLIENT_SECRET = "your-client-secret"
 REDIRECT_URI = "http://localhost:8501"
 
 # Initialize OAuth
