@@ -1,11 +1,9 @@
 import streamlit as st
 from streamlit_oauth import OAuth2Component
 
-# OAuth client credentials (replace with your values)
+# OAuth2 Configuration (replace with your credentials)
 client_id = "YOUR_GOOGLE_CLIENT_ID"
 client_secret = "YOUR_GOOGLE_CLIENT_SECRET"
-
-# Configure Google OAuth2
 oauth = OAuth2Component(
     client_id=client_id,
     client_secret=client_secret,
@@ -13,84 +11,60 @@ oauth = OAuth2Component(
     token_endpoint="https://oauth2.googleapis.com/token",
 )
 
-redirect_uri = "http://localhost:8501"  # Update if hosted
-
-# Dummy user data
-dummy_users = {
-    "jaswanth": "test123",
-    "wellness_user": "calm456"
-}
-
 def login_page():
-    st.markdown("<h1 style='text-align: center;'>🔐 Login</h1>", unsafe_allow_html=True)
+    st.set_page_config(page_title="Login", layout="centered")
+    st.markdown("""
+        <h2 style='text-align: left;'>🔒 Login</h2>
+    """, unsafe_allow_html=True)
 
-    # Initialize session state
-    if "user" not in st.session_state:
-        st.session_state.user = None
-    if "show_reset" not in st.session_state:
-        st.session_state.show_reset = False
+    with st.form("login_form"):
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+        login_clicked = st.form_submit_button("Login")
 
-    if st.session_state.user:
-        st.success(f"✅ Logged in as {st.session_state.user['username']}")
-        return True
-
-    # Layout: Login (left) | Forgot password (right)
-    col1, col2 = st.columns([2, 1])
-
-    # 🔹 LEFT SIDE: Login form
-    with col1:
-        with st.form("login_form"):
-            st.subheader("Login with Username")
-            username = st.text_input("Username")
-            password = st.text_input("Password", type="password")
-            login_btn = st.form_submit_button("Login")
-
-        if login_btn:
-            if username in dummy_users and dummy_users[username] == password:
-                st.success(f"✅ Logged in as {username}")
-                st.session_state.user = {"username": username, "method": "manual"}
-                return True
-            else:
-                st.error("❌ Invalid username or password.")
-
-    # 🔹 RIGHT SIDE: Forgot Password Button + Optional Reset Form
-    with col2:
-        st.subheader("Forgot Password?")
-        if not st.session_state.show_reset:
-            if st.button("🔑 Forgot Password?"):
-                st.session_state.show_reset = True
+    if login_clicked:
+        if username == "admin" and password == "admin":
+            st.success("Login successful!")
+            st.session_state.user = username
         else:
-            with st.form("reset_form"):
-                reset_username = st.text_input("Enter your username")
-                reset_btn = st.form_submit_button("Send Reset Link")
+            st.error("Invalid username or password")
 
-            if reset_btn:
-                if reset_username:
-                    st.success(f"📧 Reset link sent to {reset_username} (simulated).")
-                    st.session_state.show_reset = False  # hide again after submission
-                else:
-                    st.error("Please enter a valid username.")
+    # Small link styled 'Forgot Password'
+    st.markdown(
+        """
+        <p style='font-size: 0.85rem; text-align: left; margin-top: -10px;'>
+            <a href='?show_reset=true' style='color: #1a73e8;'>🔑 Forgot Password?</a>
+        </p>
+        """,
+        unsafe_allow_html=True,
+    )
 
-    # 🔽 Divider + Google Login
-    st.markdown("---")
-    st.subheader("👇 Or Continue with Google")
+    # Handle Forgot Password Form
+    if st.query_params.get("show_reset") == ["true"]:
+        with st.form("reset_form"):
+            st.markdown("### 🔄 Reset Password")
+            user = st.text_input("Enter your username")
+            new_pass = st.text_input("New Password", type="password")
+            confirm_pass = st.text_input("Confirm Password", type="password")
+            reset = st.form_submit_button("Reset Password")
+        if reset:
+            if new_pass != confirm_pass:
+                st.error("Passwords do not match")
+            else:
+                st.success("Password reset successful (simulated)")
+
+    # Divider and Google OAuth Button
+    st.markdown("""<hr style='margin-top:30px; margin-bottom:10px;'>""", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center;'>or</p>", unsafe_allow_html=True)
 
     token = oauth.authorize_button(
-        name="Continue with Google",
-        icon="🌐",
-        redirect_uri=redirect_uri,
-        scope="openid email profile",
-        use_container_width=True
+        "Continue with Google",
+        redirect_uri="http://localhost:8501",
+        scope=["profile", "email"],
     )
 
     if token:
-        userinfo = oauth.get_user_info(token)
-        if userinfo and "email" in userinfo:
-            username = userinfo["email"].split("@")[0]
-            st.session_state.user = {"username": username, "email": userinfo["email"], "method": "google"}
-            st.success(f"✅ Logged in as {username}")
-            return True
-        else:
-            st.error("Google login failed.")
+        st.success("Google Login successful!")
+        st.session_state.user = token.get("userinfo", {}).get("email", "Google User")
 
-    return False
+    return st.session_state.get("user")
