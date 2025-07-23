@@ -7,8 +7,8 @@ import os
 # load_dotenv()
 
 # Google OAuth2 Configuration
-CLIENT_ID = "95879444252-7t052beum9527nbj32qbcan2h8i1caan.apps.googleusercontent.com"
-CLIENT_SECRET = "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"
+client_id = os.getenv("95879444252-7t052beum9527nbj32qbcan2h8i1caan.apps.googleusercontent.com")
+client_secret = os.getenv("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")
 redirect_uri = "http://localhost:8501"  # Update if deployed
 
 # OAuth2 Component setup
