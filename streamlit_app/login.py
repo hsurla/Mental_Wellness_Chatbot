@@ -101,55 +101,72 @@ def login_page():
 
     st.title("🔐 Login")
 
-    # Create a form for the login inputs
-    login_form = st.form("login_form")
-    with login_form:
-        username = login_form.text_input("Username")
-        password = login_form.text_input("Password", type="password")
-        submitted = login_form.form_submit_button("Login")
-
-    # Place the forgot password link outside the form
+    # Create custom CSS for the integrated button/link
     st.markdown("""
     <style>
-    .forgot-link {
+    .forgot-password-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 1rem;
+    }
+    .forgot-password-link {
         color: #666;
         text-decoration: none;
         font-size: 0.9em;
-        float: right;
-        margin-top: -15px;
-        margin-bottom: 15px;
         cursor: pointer;
     }
-    .forgot-link:hover {
+    .forgot-password-link:hover {
         color: #444;
         text-decoration: underline;
     }
+    .login-button {
+        margin-left: auto;
+    }
     </style>
-    <div class="forgot-link-container">
-        <a href="#" id="forgot-link">Forgot password?</a>
-    </div>
     """, unsafe_allow_html=True)
 
-    # Handle the forgot password click
-    if st.button(" ", key="forgot_btn_hidden"):
-        st.session_state.show_forgot_password = True
-        st.rerun()
+    # Main login form
+    with st.form("login_form"):
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+        
+        # Custom container for login button and forgot password
+        st.markdown("""
+        <div class="forgot-password-container">
+            <span class="forgot-password-link" onclick="this.parentNode.querySelector('button').click()">
+                Forgot password?
+            </span>
+            <button type="submit" class="login-button">Login</button>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Hidden button to trigger forgot password
+        forgot_clicked = st.form_submit_button(" ", key="forgot_hidden", help="Forgot password")
+        
+        if forgot_clicked:
+            st.session_state.show_forgot_password = True
+            st.rerun()
 
-    if submitted:
-        user = USERS_DB.get(username)
-        if user and user["password"] == password:
+    # Handle form submission
+    if st.session_state.get("login_form_submitted", False):
+        st.session_state.login_form_submitted = False
+        user = USERS_DB.get(st.session_state.login_username)
+        if user and user["password"] == st.session_state.login_password:
             st.session_state.user_email = user["email"]
             st.success("Logged in successfully!")
             st.rerun()
         else:
             st.error("Invalid username or password")
 
+    # Show forgot password form if triggered
     if st.session_state.get("show_forgot_password", False):
         with st.container():
             st.markdown("---")
             show_forgot_password_form()
         return False
 
+    # Google OAuth login
     st.markdown("---")
     st.subheader("Or sign in with Google")
 
