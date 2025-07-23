@@ -1,17 +1,15 @@
 import streamlit as st
 from streamlit_oauth import OAuth2Component
 import requests
-import smtplib
-from datetime import datetime, timedelta
 import secrets
+from datetime import datetime, timedelta
 
-# ===== Configuration =====
-CLIENT_ID = "95879444252-7t052beum9527nbj32qbcan2h8i1caan.apps.googleusercontent.com"
-CLIENT_SECRET = "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"
-REDIRECT_URI = "http://localhost:8501"  # Must match Google Cloud Console
+# Configuration
+CLIENT_ID = "your-client-id.apps.googleusercontent.com"
+CLIENT_SECRET = "your-client-secret"
+REDIRECT_URI = "http://localhost:8501"
 AUTH_URL = "https://accounts.google.com/o/oauth2/auth"
 TOKEN_URL = "https://oauth2.googleapis.com/token"
-# ========================
 
 # Initialize OAuth
 oauth2 = OAuth2Component(
@@ -21,48 +19,42 @@ oauth2 = OAuth2Component(
     token_endpoint=TOKEN_URL
 )
 
-# Mock user database (replace with real DB in production)
-USER_CREDENTIALS = {
+# User database (in production, use a real database)
+USERS_DB = {
     "demo_user": {
         "password": "demo_pass",
-        "email": "user@example.com",
-        "reset_tokens": {}
+        "email": "demo@example.com",
+        "verified": True
     }
 }
 
-# Password reset token storage (in-memory for demo)
+# Password reset tokens (in production, use a database)
 RESET_TOKENS = {}
 
 def generate_reset_token(email):
-    """Generate a secure token with 1-hour expiry"""
+    """Create a secure token with expiration"""
     token = secrets.token_urlsafe(32)
-    expires = datetime.now() + timedelta(hours=1)
+    expires_at = datetime.now() + timedelta(hours=1)
     RESET_TOKENS[token] = {
         "email": email,
-        "expires": expires
+        "expires_at": expires_at
     }
     return token
 
-def send_reset_email(email, token):
+def send_password_reset_email(email, token):
     """Mock email sending function"""
     reset_link = f"{REDIRECT_URI}?token={token}"
-    print(f"[DEMO] Password reset link for {email}: {reset_link}")
-    # Uncomment for real email sending:
-    """
-    message = f"Subject: Password Reset\n\nClick to reset: {reset_link}"
-    with smtplib.SMTP("your-smtp-server.com", 587) as server:
-        server.starttls()
-        server.login("your-email@example.com", "email-password")
-        server.sendmail("noreply@example.com", email, message)
-    """
+    print(f"Password reset link for {email}: {reset_link}")
+    # In production, implement real email sending here
+    # using smtplib or a service like SendGrid
 
-def show_forgot_password():
-    """Forgot password form with email input"""
+def show_forgot_password_form():
+    """Display the forgot password form"""
     with st.form("forgot_password_form"):
-        st.subheader("🔒 Reset Your Password")
-        email = st.text_input("Enter your registered email")
+        st.subheader("🔒 Password Recovery")
+        email = st.text_input("Enter your email address")
         
-        col1, col2 = st.columns([1, 3])
+        col1, col2 = st.columns(2)
         with col1:
             submit = st.form_submit_button("Send Reset Link")
         with col2:
@@ -71,17 +63,17 @@ def show_forgot_password():
                 st.rerun()
         
         if submit and email:
-            # Check if email exists
-            user_exists = any(user["email"] == email for user in USER_CREDENTIALS.values())
+            # Check if email exists in database
+            user_exists = any(user["email"] == email for user in USERS_DB.values())
             
             if user_exists:
                 token = generate_reset_token(email)
-                send_reset_email(email, token)
-                st.success(f"Reset link sent to {email} (check console for demo link)")
+                send_password_reset_email(email, token)
+                st.success("Password reset link sent! Check your email.")
                 st.session_state.show_forgot_password = False
                 st.rerun()
             else:
-                st.error("No account found with that email")
+                st.error("No account found with this email")
 
 def handle_password_reset():
     """Process password reset from URL token"""
@@ -89,20 +81,22 @@ def handle_password_reset():
         token = st.query_params["token"]
         
         if token in RESET_TOKENS:
-            if datetime.now() < RESET_TOKENS[token]["expires"]:
-                email = RESET_TOKENS[token]["email"]
+            token_data = RESET_TOKENS[token]
+            
+            if datetime.now() < token_data["expires_at"]:
+                email = token_data["email"]
                 
                 with st.form("reset_password_form"):
-                    st.subheader("🔄 Create New Password")
+                    st.subheader("🔄 Reset Your Password")
                     new_password = st.text_input("New Password", type="password")
                     confirm_password = st.text_input("Confirm Password", type="password")
                     
                     if st.form_submit_button("Update Password"):
                         if new_password == confirm_password:
-                            # Update password in mock database
-                            for username, data in USER_CREDENTIALS.items():
-                                if data["email"] == email:
-                                    USER_CREDENTIALS[username]["password"] = new_password
+                            # Update password in database
+                            for username, user_data in USERS_DB.items():
+                                if user_data["email"] == email:
+                                    USERS_DB[username]["password"] = new_password
                                     break
                             
                             del RESET_TOKENS[token]
@@ -110,7 +104,7 @@ def handle_password_reset():
                             st.session_state.password_reset_done = True
                             st.rerun()
                         else:
-                            st.error("Passwords don't match")
+                            st.error("Passwords do not match")
             else:
                 st.error("Reset link has expired")
                 del RESET_TOKENS[token]
@@ -118,52 +112,61 @@ def handle_password_reset():
             st.error("Invalid reset link")
 
 def login_page():
-    """Main login page with both manual and Google auth"""
-    # Handle password reset from URL
+    """Main login page with authentication"""
+    # Handle password reset if token exists in URL
     if not st.session_state.get("password_reset_done", False):
         handle_password_reset()
     
+    # Check if already logged in
     if 'user_email' in st.session_state:
         return True
 
     st.title("🔐 Login")
 
     # Manual login form
-    with st.form("manual_login_form"):
+    with st.form("login_form"):
         username = st.text_input("Username")
         password = st.text_input("Password", type="password")
         
         # Forgot password link
         st.markdown(
-            """<div style="text-align: right; margin-top: -15px;">
-            <a href="#" onclick="window.streamlitSessionState.set('show_forgot_password', true); return false;">
-            Forgot password?</a></div>""",
+            """<style>
+            .forgot-password-link {
+                text-align: right;
+                margin-top: -15px;
+                margin-bottom: 15px;
+            }
+            </style>
+            <div class="forgot-password-link">
+                <a href="#" onclick="window.streamlitSessionState.set('show_forgot_password', true); return false;">
+                Forgot password?</a>
+            </div>""",
             unsafe_allow_html=True
         )
         
         submitted = st.form_submit_button("Login")
 
         if submitted:
-            user = USER_CREDENTIALS.get(username)
+            user = USERS_DB.get(username)
             if user and user["password"] == password:
                 st.session_state.user_email = user["email"]
-                st.success("Logged in successfully.")
+                st.success("Logged in successfully!")
                 st.rerun()
             else:
-                st.error("Invalid username or password.")
+                st.error("Invalid username or password")
 
     # Show forgot password form if triggered
     if st.session_state.get("show_forgot_password", False):
-        show_forgot_password()
+        show_forgot_password_form()
         return False
 
+    # Google OAuth login
     st.markdown("---")
     st.subheader("Or sign in with Google")
 
-    # Google OAuth button
     token = oauth2.authorize_button(
-        name="Log in with Google",
-        redirect_uri=REDIRECT_URI,  # Now properly defined
+        name="Continue with Google",
+        redirect_uri=REDIRECT_URI,
         scope="openid email profile"
     )
 
@@ -179,6 +182,7 @@ def login_page():
                 st.success(f"Logged in as {userinfo['email']}")
                 st.rerun()
         except Exception as e:
-            st.error(f"Login failed: {str(e)}")
+            st.error(f"Google login failed: {str(e)}")
 
     return False
+
