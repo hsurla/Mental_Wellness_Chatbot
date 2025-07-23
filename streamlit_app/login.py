@@ -4,8 +4,9 @@ import requests
 import secrets
 from datetime import datetime, timedelta
 
-CLIENT_ID = "95879444252-7t052beum9527nbj32qbcan2h8i1caan.apps.googleusercontent.com"
-CLIENT_SECRET = "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"
+# Configuration
+CLIENT_ID = "your-client-id.apps.googleusercontent.com"
+CLIENT_SECRET = "your-client-secret"
 REDIRECT_URI = "http://localhost:8501"
 AUTH_URL = "https://accounts.google.com/o/oauth2/auth"
 TOKEN_URL = "https://oauth2.googleapis.com/token"
@@ -22,8 +23,7 @@ oauth2 = OAuth2Component(
 USERS_DB = {
     "demo_user": {
         "password": "demo_pass",
-        "email": "demo@example.com",
-        "verified": True
+        "email": "demo@example.com"
     }
 }
 
@@ -40,35 +40,28 @@ def generate_reset_token(email):
     }
     return token
 
-def send_password_reset_email(email, token):
-    """Mock email sending function"""
-    reset_link = f"{REDIRECT_URI}?token={token}"
-    print(f"Password reset link for {email}: {reset_link}")
-    # In production, implement real email sending here
-    # using smtplib or a service like SendGrid
-
 def show_forgot_password_form():
     """Display the forgot password form"""
     with st.form("forgot_password_form"):
-        st.subheader("🔒 Password Recovery")
-        email = st.text_input("Enter your email address")
+        st.subheader("🔒 Reset Your Password")
+        email = st.text_input("Enter your registered email address")
         
         col1, col2 = st.columns(2)
         with col1:
-            submit = st.form_submit_button("Send Reset Link")
+            submit_reset = st.form_submit_button("Send Reset Link")
         with col2:
             if st.form_submit_button("Cancel"):
                 st.session_state.show_forgot_password = False
                 st.rerun()
         
-        if submit and email:
-            # Check if email exists in database
+        if submit_reset and email:
+            # Check if email exists
             user_exists = any(user["email"] == email for user in USERS_DB.values())
             
             if user_exists:
                 token = generate_reset_token(email)
-                send_password_reset_email(email, token)
-                st.success("Password reset link sent! Check your email.")
+                reset_link = f"{REDIRECT_URI}?token={token}"
+                st.success(f"Password reset link generated (demo): {reset_link}")
                 st.session_state.show_forgot_password = False
                 st.rerun()
             else:
@@ -111,7 +104,7 @@ def handle_password_reset():
             st.error("Invalid reset link")
 
 def login_page():
-    """Main login page with authentication"""
+    """Main login page with working forgot password"""
     # Handle password reset if token exists in URL
     if not st.session_state.get("password_reset_done", False):
         handle_password_reset()
@@ -127,24 +120,36 @@ def login_page():
         username = st.text_input("Username")
         password = st.text_input("Password", type="password")
         
-        # Forgot password link
-        st.markdown(
-            """<style>
-            .forgot-password-link {
-                text-align: right;
-                margin-top: -15px;
-                margin-bottom: 15px;
-            }
-            </style>
-            <div class="forgot-password-link">
-                <a href="#" onclick="window.streamlitSessionState.set('show_forgot_password', true); return false;">
-                Forgot password?</a>
-            </div>""",
-            unsafe_allow_html=True
-        )
+        # Forgot password button styled as a link
+        st.markdown("""
+        <style>
+        .forgot-link {
+            color: #666;
+            text-decoration: none;
+            font-size: 0.9em;
+            float: right;
+            margin-top: -15px;
+            margin-bottom: 15px;
+            cursor: pointer;
+        }
+        .forgot-link:hover {
+            color: #444;
+            text-decoration: underline;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        
+        # Invisible button for functionality
+        forgot_clicked = st.button(" ", key="forgot_btn", help="Forgot password?")
+        st.markdown('<div class="forgot-link">Forgot password?</div>', 
+                   unsafe_allow_html=True)
         
         submitted = st.form_submit_button("Login")
-
+        
+        if forgot_clicked:
+            st.session_state.show_forgot_password = True
+            st.rerun()
+            
         if submitted:
             user = USERS_DB.get(username)
             if user and user["password"] == password:
@@ -156,7 +161,9 @@ def login_page():
 
     # Show forgot password form if triggered
     if st.session_state.get("show_forgot_password", False):
-        show_forgot_password_form()
+        with st.container():
+            st.markdown("---")
+            show_forgot_password_form()
         return False
 
     # Google OAuth login
@@ -184,4 +191,3 @@ def login_page():
             st.error(f"Google login failed: {str(e)}")
 
     return False
-
