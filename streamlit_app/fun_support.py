@@ -1,3 +1,4 @@
+# streamlit_app/fun_support.py
 def get_fun_activity():
     return "Go for a walk, play a quick game, or watch a funny video!"
 

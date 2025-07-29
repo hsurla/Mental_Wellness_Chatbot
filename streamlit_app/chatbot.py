@@ -1,6 +1,4 @@
 # streamlit_app/chatbot.py
-
-
 from database.database import log_chat, log_mood, flag_crisis
 import streamlit as st
 import nltk
@@ -10,8 +8,6 @@ nltk.download('vader_lexicon')
 from datetime import datetime
 import text2emotion as te
 import random
-import requests
-
 
 sia = SentimentIntensityAnalyzer()
 

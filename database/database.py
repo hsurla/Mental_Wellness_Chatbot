@@ -1,9 +1,6 @@
 # database/database.py
-
-import pymongo
 from pymongo import MongoClient
 from datetime import datetime
-import os
 from bson.objectid import ObjectId
 import bcrypt
 
