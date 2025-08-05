@@ -5,6 +5,11 @@ import time
 import requests
 import os
 from login import login_page
+from streamlit_app.profile import profile_page
+from streamlit_app.journal import journal_page
+from streamlit_app.chat_history import chat_history_page
+from streamlit_app.chatbot import chat_with_bot
+
 from database.database import (
     get_chat_history,
     save_journal_entry,
@@ -48,18 +53,18 @@ def chatbot_response(user_message):
         ("Let me suggest some relaxation techniques...", "neutral")
     ])
 
-def profile_page(username):
-    st.title("👤 Your Profile")
-    st.write(f"Logged in as: **{username}**")
-    with st.expander("Account Settings"):
-        st.text_input("Change display name", value=username.split("@")[0])
-        st.button("Save Changes")
-    with st.expander("Wellness Preferences"):
-        st.multiselect(
-            "Your interests",
-            ["Mindfulness", "Exercise", "Nutrition", "Sleep", "Relationships"],
-            default=["Mindfulness"]
-        )
+#def profile_page(username):
+#    st.title("👤 Your Profile")
+#    st.write(f"Logged in as: **{username}**")
+#    with st.expander("Account Settings"):
+ #       st.text_input("Change display name", value=username.split("@")[0])
+#        st.button("Save Changes")
+ #   with st.expander("Wellness Preferences"):
+ #       st.multiselect(
+#            "Your interests",
+#            ["Mindfulness", "Exercise", "Nutrition", "Sleep", "Relationships"],
+#            default=["Mindfulness"]
+#        )
 
 def main():
     os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
@@ -97,11 +102,19 @@ def main():
         if prompt := st.chat_input("How are you feeling today?"):
             timestamp = datetime.now().strftime("%H:%M")
             st.session_state.chat_history.append(("You", prompt, timestamp))
+
             with st.spinner("Thinking..."):
-                response, emotion = chatbot_response(prompt)
-                timestamp = datetime.now().strftime("%H:%M")
-                st.session_state.chat_history.append(("Bot", f"{response} (Mood: {emotion})", timestamp))
-                st.rerun()
+                try:
+                    response, emotion, timestamp = chat_with_bot(username,prompt)
+                    timestamp = datetime.now().strftime("%H:%M")
+                    st.session_state.chat_history.append(("Bot", f"{response} (Mood: {emotion})", timestamp))
+                except Exception as e:
+                    st.error("Chatbot is temporarily unavailable")
+                    response = "I'm having trouble responding right now. Please try again later."
+                    st.session_state.chat_history.append(
+                    ("Bot", response, timestamp)
+                    )
+            st.rerun()
 
     elif page == "🧈 Wellness":
         st.title("🧈 Wellness Center")
@@ -124,53 +137,10 @@ def main():
         st.video("https://www.youtube.com/watch?v=inpok4MKVLM")
 
     elif page == "📚 Chat History":
-        st.title("📚 Your Chat History")
-        if history := get_chat_history(username):
-            for entry in history:
-                st.write(f"**You:** {entry['user_message']}")
-                st.write(f"**Bot:** {entry['bot_response']} *(Mood: {entry['emotion_detected']})*")
-                st.caption(entry['timestamp'])
-                st.markdown("---")
-        else:
-            st.info("No chat history yet")
+        chat_history_page(username)
 
     elif page == "📔 Journal":
-        st.title("📔 Your Personal Journal")
-
-        st.markdown("Write down anything you're feeling or thinking.")
-        journal_text = st.text_area("New Entry", placeholder="Start writing here...")
-
-        if st.button("Save Entry"):
-            if journal_text.strip():
-                save_journal_entry(username, journal_text.strip())
-                st.success("Entry saved successfully!")
-                st.rerun()
-            else:
-                st.warning("Entry cannot be empty.")
-
-        st.markdown("### 📚 Previous Entries")
-        entries = get_journal_entries(username)
-
-        if not entries:
-            st.info("No journal entries yet.")
-        else:
-            for entry in reversed(entries):
-                entry_id = str(entry.get("_id"))
-                time_sent = entry.get("timestamp", "")
-                text = entry.get("text", "")
-                with st.expander(f"🕒 {time_sent}"):
-                    edited_text = st.text_area("Edit entry", value=text, key=entry_id)
-                    col1, col2 = st.columns([1, 1])
-                    with col1:
-                        if st.button("Update", key=f"update_{entry_id}"):
-                            update_journal_entry(username, entry_id, edited_text)
-                            st.success("Entry updated.")
-                            st.rerun()
-                    with col2:
-                        if st.button("Delete", key=f"delete_{entry_id}"):
-                            delete_journal_entry(username, entry_id)
-                            st.warning("Entry deleted.")
-                            st.rerun()
+        journal_page(username)
 
     elif page == "👤 Profile":
         profile_page(username)

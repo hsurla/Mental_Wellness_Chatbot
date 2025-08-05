@@ -12,9 +12,9 @@ from database.database import (
 def profile_page(username):
   st.title("👤 Your Profile Summary")
 
-  latest_mood, mood_time = get_latest_mood(st.session_state["username"])
-  total_chats = get_total_chat_count(st.session_state["username"])
-  total_journals = get_total_journal_count(st.session_state["username"])
+  latest_mood, mood_time = get_latest_mood(username)
+  total_chats = get_total_chat_count(username)
+  total_journals = get_total_journal_count(username)
 
   st.markdown(f"""
   ### 🧠 Latest Mood
