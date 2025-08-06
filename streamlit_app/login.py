@@ -83,6 +83,9 @@ def handle_password_reset():
             st.error("Invalid reset link")
 
 def login_page():
+    #Add logo at the top
+    st.image("logo.png", width=150)
+
     if not st.session_state.get("password_reset_done", False):
         handle_password_reset()
     
