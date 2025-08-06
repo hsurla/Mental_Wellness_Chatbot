@@ -83,46 +83,17 @@ def handle_password_reset():
             st.error("Invalid reset link")
 
 def login_page():
-    # Custom CSS for the header
-    st.markdown("""
-    <style>
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-        }
-        .header-title {
-            font-size: 1.8rem;
-            font-weight: bold;
-        }
-        .close-btn {
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: #999;
-        }
-        .close-btn:hover {
-            color: #555;
-        }
-    </style>
-    """, unsafe_allow_html=True)
-
-    # Header with logo, title and close button
-    st.markdown("""
-    <div class="header">
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <img src="logo.png" width="40">
-            <div class="header-title">Mental Wellness Chatbot</div>
-        </div>
-        <div class="close-btn">×</div>
-    </div>
-    """, unsafe_allow_html=True)
-
     if not st.session_state.get("password_reset_done", False):
         handle_password_reset()
     
     if 'user_email' in st.session_state:
         return True
+
+    st.title("🔐 Login")
+
+    # Initialize session state
+    if "show_forgot_password" not in st.session_state:
+        st.session_state.show_forgot_password = False
 
     # Main login form
     with st.form("login_form"):
