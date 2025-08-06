@@ -111,7 +111,7 @@ def login_page():
     st.markdown("""
     <div class="header">
         <div style="display: flex; align-items: center; gap: 10px;">
-            <img src="https://via.placeholder.com/40" width="40">
+            <img src="logo.png" width="40">
             <div class="header-title">Mental Wellness Chatbot</div>
         </div>
         <div class="close-btn">×</div>
