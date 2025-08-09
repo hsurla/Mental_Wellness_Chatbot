@@ -13,6 +13,13 @@ def chat_history_page(username):
             st.info("No chat history found.")
             return
             
+        # Convert timestamps to datetime for proper sorting
+        for chat in chat_data:
+            chat['datetime'] = pd.to_datetime(chat['timestamp'])
+        
+        # Sort by datetime in ascending order (oldest first)
+        chat_data.sort(key=lambda x: x['datetime'])
+        
         # --- SEARCH FUNCTIONALITY ---
         search_term = st.text_input("🔍 Search your chat history", 
                                    placeholder="Type a keyword to search...")
@@ -20,7 +27,6 @@ def chat_history_page(username):
         if search_term:
             filtered_data = []
             for chat in chat_data:
-                # Handle potential missing keys
                 user_msg = chat.get('user_message', '').lower()
                 bot_res = chat.get('bot_response', '').lower()
                 
@@ -59,14 +65,15 @@ def chat_history_page(username):
         
         # --- PAGINATION ---
         items_per_page = 10
-        total_pages = (result_count // items_per_page) + 1
+        total_pages = max(1, (result_count + items_per_page - 1) // items_per_page)
         page = st.selectbox("Page", range(1, total_pages+1), index=0)
         start_idx = (page-1) * items_per_page
-        end_idx = start_idx + items_per_page
+        end_idx = min(start_idx + items_per_page, result_count)
         
-        # --- IMPROVED VISUAL DESIGN ---
+        # --- PROPERLY SORTED DISPLAY ---
         if chat_data:
-            for chat in reversed(chat_data[start_idx:end_idx]):
+            # Display in chronological order (oldest first)
+            for chat in chat_data[start_idx:end_idx]:
                 with st.expander(f"💬 {chat.get('timestamp', 'Unknown date')}", expanded=False):
                     # User message
                     col1, col2 = st.columns([1, 10])
