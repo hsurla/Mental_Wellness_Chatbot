@@ -3,11 +3,12 @@ import streamlit as st
 from streamlit_oauth import OAuth2Component
 import requests
 import secrets
+import os
 from datetime import datetime, timedelta
 
 # Configuration
-CLIENT_ID = "95879444252-7t052beum9527nbj32qbcan2h8i1caan.apps.googleusercontent.com"
-CLIENT_SECRET = "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"
+CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 REDIRECT_URI = "http://localhost:8501"
 
 # Initialize OAuth

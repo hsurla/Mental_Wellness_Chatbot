@@ -1,23 +1,24 @@
 # streamlit_app/app.py
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+env_path=Path(__file__).parent.parent/'.env'
+load_dotenv()
+
 import streamlit as st
 from datetime import datetime
 import time
 import requests
-import os
-from login import login_page
+
+from streamlit_app.login import login_page
 from streamlit_app.profile import profile_page
 from streamlit_app.journal import journal_page
 from streamlit_app.chat_history import chat_history_page
 from streamlit_app.chatbot import chat_with_bot
-
-from database.database import (
-    get_chat_history,
-    save_journal_entry,
-    get_journal_entries,
-    update_journal_entry,
-    delete_journal_entry
-)
 import random
+
+
 
 # Set page config
 st.set_page_config(

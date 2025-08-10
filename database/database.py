@@ -3,9 +3,10 @@ from pymongo import MongoClient
 from datetime import datetime
 from bson.objectid import ObjectId
 import bcrypt
+import os
 
 # MongoDB Atlas Connection
-MONGO_URI = "mongodb+srv://rtxklaus1:9Oj0O6RmDeYZM5za@mental-wellness-chatbot.ta0sbvh.mongodb.net/"
+MONGO_URI = os.getenv("MONGO_URI")
 client = MongoClient(MONGO_URI)
 db = client["mental_wellness_db"]
 users_collection = db["users"]
