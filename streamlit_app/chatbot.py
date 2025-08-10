@@ -300,7 +300,7 @@ tone_response_map = {
             "Let's pause for a moment together.",
             "We can take things one step at a time.",
             "Just rest here with me for a moment.",
-            "Let's allow ourselves a slow, calm reset. �"
+            "Let's allow ourselves a slow, calm reset."
         ],
         "angry": [
             "Anger is okay. Let's explore it calmly.",
