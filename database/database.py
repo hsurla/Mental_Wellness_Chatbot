@@ -10,6 +10,7 @@ MONGO_URI = os.getenv("MONGO_URI")
 client = MongoClient(MONGO_URI)
 db = client["mental_wellness_db"]
 users_collection = db["users"]
+reset_tokens_collection = db["reset_tokens"]
 
 # Add a new user during registration
 def add_user(username, password):
