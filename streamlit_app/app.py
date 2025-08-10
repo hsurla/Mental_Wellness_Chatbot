@@ -18,8 +18,6 @@ from streamlit_app.chat_history import chat_history_page
 from streamlit_app.chatbot import chat_with_bot
 import random
 
-
-
 # Set page config
 st.set_page_config(
     page_title="Mental Wellness Chatbot",
