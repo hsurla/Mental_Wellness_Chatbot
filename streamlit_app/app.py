@@ -18,6 +18,8 @@ from streamlit_app.chat_history import chat_history_page
 from streamlit_app.chatbot import chat_with_bot
 import random
 
+
+
 # Set page config
 st.set_page_config(
     page_title="Mental Wellness Chatbot",
@@ -70,10 +72,11 @@ def main():
     if not login_page():
         return
 
-    username = st.session_state.user_email
+    email = st.session_state.user_email
+    display_name = email.split("@")[0] if email else "User"
 
     with st.sidebar:
-        st.title(f"Hello, {username.split('@')[0]}!")
+        st.title(f"Hello, {display_name}!")
         page = st.radio(
             "Menu",
             ["💬 Chatbot", "🧈 Wellness", "📚 Chat History", "📔 Journal", "👤 Profile", "🚪 Logout"],
@@ -104,7 +107,7 @@ def main():
 
             with st.spinner("Thinking..."):
                 try:
-                    response, emotion, timestamp = chat_with_bot(username,prompt)
+                    response, emotion, timestamp = chat_with_bot(email,prompt)
                     timestamp = datetime.now().strftime("%H:%M")
                     st.session_state.chat_history.append(("Bot", f"{response} (Mood: {emotion})", timestamp))
                 except Exception as e:
@@ -136,13 +139,13 @@ def main():
         st.video("https://www.youtube.com/watch?v=inpok4MKVLM")
 
     elif page == "📚 Chat History":
-        chat_history_page(username)
+        chat_history_page(email)
 
     elif page == "📔 Journal":
-        journal_page(username)
+        journal_page(email)
 
     elif page == "👤 Profile":
-        profile_page(username)
+        profile_page(email)
 
     elif page == "🚪 Logout":
         st.session_state.clear()
