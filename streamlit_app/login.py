@@ -12,7 +12,7 @@ from database.database import (
     find_user_by_google_id,
     add_user,
     update_password,
-    add_google_id
+    add_google_id,
 )
 
 # Configuration
