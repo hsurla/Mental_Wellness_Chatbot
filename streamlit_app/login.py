@@ -13,6 +13,7 @@ from database.database import (
     add_user,
     update_password,
     add_google_id,
+    reset_tokens_collection
 )
 
 # Configuration
@@ -114,6 +115,7 @@ def login_page():
             user = find_user_by_email(email)
             if user and "password" in user and bcrypt.checkpw(password.encode(), user["password"].encode()):
                 st.session_state.user_email = user["email"]
+                st.session_state.user_data = user
                 st.success("Logged in successfully!")
                 st.rerun()
             else:
@@ -167,9 +169,17 @@ def login_page():
                             google_id=google_id,
                             username=userinfo.get("name", "")
                         )
+                        #flag that user needs to set up password
+                        st.session_state.needs_password_setup = True
+
+                #set session state
                 st.session_state.user_email = email
-                st.success(f"Logged in as {email}")
-                st.rerun()
+                st.session_state.user_data = user or find_user_by_email(email)
+
+                #only rerun if not in password setup mode
+                if not st.session_state.get("needs_password_setup", False):
+                    st.success(f"Logged in as {email}")
+                    st.rerun()
         except Exception as e:
             st.error(f"Google login failed: {str(e)}")
 
