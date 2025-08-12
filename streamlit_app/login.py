@@ -6,6 +6,9 @@ import secrets
 import os
 from datetime import datetime, timedelta
 import bcrypt
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 from database.database import (
     find_user_by_email,
@@ -20,6 +23,10 @@ from database.database import (
 CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 REDIRECT_URI = "http://localhost:8501"
+SMTP_SERVER = "smtp.gmail.com"
+SMTP_PORT = 587
+EMAIL_FROM = os.getenv("RESET_EMAIL_FROM")
+EMAIL_PASSWORD = os.getenv("RESET_EMAIL_PASSWORD")
 
 # Initialize OAuth
 oauth2 = OAuth2Component(
@@ -28,6 +35,43 @@ oauth2 = OAuth2Component(
     authorize_endpoint="https://accounts.google.com/o/oauth2/auth",
     token_endpoint="https://oauth2.googleapis.com/token"
 )
+
+def send_reset_email(email, reset_link):
+    """Send password reset email to user"""
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = EMAIL_FROM
+        msg['To'] = email
+        msg['Subject'] = "Password Reset Request"
+        
+        body = f"""
+        <html>
+            <body>
+                <h2>Password Reset Request</h2>
+                <p>Click below to reset your password:</p>
+                <p><a href="{reset_link}" style="
+                    background: #4285F4;
+                    color: white;
+                    padding: 10px 15px;
+                    text-decoration: none;
+                    border-radius: 5px;
+                    font-weight: bold;
+                ">Reset Password</a></p>
+                <p><small>Link expires in 1 hour</small></p>
+            </body>
+        </html>
+        """
+        
+        msg.attach(MIMEText(body, 'html'))
+        
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+            server.starttls()
+            server.login(EMAIL_FROM, EMAIL_PASSWORD)
+            server.send_message(msg)
+        return True
+    except Exception as e:
+        st.error(f"Failed to send email: {str(e)}")
+        return False
 
 def generate_reset_token(email):
     token = secrets.token_urlsafe(32)
@@ -57,9 +101,10 @@ def show_forgot_password_form():
             if user:
                 token = generate_reset_token(email)
                 reset_link = f"{REDIRECT_URI}?token={token}"
-                st.success(f"Password reset link generated (demo): {reset_link}")
-                st.session_state.show_forgot_password = False
-                st.rerun()
+                if send_reset_email(email, reset_link):
+                    st.success("Password reset link sent to your email!")
+                    st.session_state.show_forgot_password = False
+                    st.rerun()
             else:
                 st.error("No account found with this email")
 
@@ -77,7 +122,8 @@ def handle_password_reset():
                     confirm_password = st.text_input("Confirm Password", type="password")
                     if st.form_submit_button("Update Password"):
                         if new_password == confirm_password:
-                            update_password(email,new_password)
+                            hashed_pw = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt()).decode()
+                            update_password(email, hashed_pw)
                             reset_tokens_collection.delete_one({"token": token})
                             st.success("Password updated successfully! Please login.")
                             st.session_state.password_reset_done = True
