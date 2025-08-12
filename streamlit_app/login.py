@@ -65,7 +65,9 @@ def send_reset_email(email, reset_link):
         msg.attach(MIMEText(body, 'html'))
         
         with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+            server.ehlo()
             server.starttls()
+            server.ehlo()
             server.login(EMAIL_FROM, EMAIL_PASSWORD)
             server.send_message(msg)
         return True
