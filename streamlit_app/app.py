@@ -10,13 +10,15 @@ import streamlit as st
 from datetime import datetime
 import time
 import requests
+import random
 
 from streamlit_app.login import login_page
+from streamlit_app.register import registration_page
 from streamlit_app.profile import profile_page
 from streamlit_app.journal import journal_page
 from streamlit_app.chat_history import chat_history_page
 from streamlit_app.chatbot import chat_with_bot
-import random
+from streamlit_app.fun_support import get_fun_activity, get_healthy_snack
 
 # Set page config
 st.set_page_config(
@@ -24,25 +26,6 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
-
-# Sample wellness functions
-def get_fun_activity():
-    return random.choice([
-        "Go for a 10-minute walk in nature",
-        "Try 5 minutes of deep breathing",
-        "Write down 3 things you're grateful for",
-        "Listen to your favorite song and dance",
-        "Do a quick 5-minute stretching routine"
-    ])
-
-def get_healthy_snack():
-    return random.choice([
-        "A handful of almonds and an apple",
-        "Greek yogurt with berries",
-        "Carrot sticks with hummus",
-        "Whole grain toast with avocado",
-        "A smoothie with spinach and banana"
-    ])
 
 def chatbot_response(user_message):
     return random.choice([
@@ -67,13 +50,69 @@ def chatbot_response(user_message):
 
 def main():
     os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
-    if not login_page():
-        return
+    
+    #handle password setup after google signup
+    if st.session_state.get("needs_password_setup"):
+        email=st.session_state.user_email
+        with st.form("password_setup_form"):
+            st.title("🔐 Set Up Your Password")
+            st.write(f"Email: {email}")
+            password = st.text_input("Create Password", type="password")
+            confirm_password = st.text_input("Confirm Password", type="password")
+            
+            if st.form_submit_button("Save Password"):
+                if password == confirm_password:
+                    from database.database import update_password
+                    update_password(email, password)
+                    st.success("Password set up successfully!")
+                    st.session_state.needs_password_setup = False
 
-    username = st.session_state.user_email
+                    # Ensure user data is refreshed
+                    from database.database import find_user_by_email
+                    user = find_user_by_email(email)
+                    st.session_state.user_data = user or {"email": email}
+
+                    time.sleep(1)
+                    st.rerun()
+                else:
+                    st.error("Passwords do not match")
+        return
+    
+    # Show login or registration page if not authenticated
+    if 'user_email' not in st.session_state:
+        st.sidebar.title("Account")
+        auth_option = st.sidebar.radio(
+            "Authentication",
+            ["🔐 Login", "📝 Register"],
+            label_visibility="collapsed"
+        )
+        
+        if auth_option == "🔐 Login":
+            if login_page():
+                st.rerun()
+        elif auth_option == "📝 Register":
+            registration_page()
+        return
+    
+    # Main app after login
+    email = st.session_state.user_email
+    
+    # Ensure user_data exists in session state
+    if 'user_data' not in st.session_state:
+        # Import inside function where it's actually used
+        from database.database import find_user_by_email
+        user = find_user_by_email(email)
+        if user:
+            st.session_state.user_data = user
+        else:
+            # Fallback to minimal user data
+            st.session_state.user_data = {"email": email}
+
+    user_data = st.session_state.user_data
+    display_name = user_data.get("username", email.split("@")[0])
 
     with st.sidebar:
-        st.title(f"Hello, {username.split('@')[0]}!")
+        st.title(f"Hello, {display_name}!")
         page = st.radio(
             "Menu",
             ["💬 Chatbot", "🧈 Wellness", "📚 Chat History", "📔 Journal", "👤 Profile", "🚪 Logout"],
@@ -104,7 +143,7 @@ def main():
 
             with st.spinner("Thinking..."):
                 try:
-                    response, emotion, timestamp = chat_with_bot(username,prompt)
+                    response, emotion, timestamp = chat_with_bot(email,prompt)
                     timestamp = datetime.now().strftime("%H:%M")
                     st.session_state.chat_history.append(("Bot", f"{response} (Mood: {emotion})", timestamp))
                 except Exception as e:
@@ -136,13 +175,13 @@ def main():
         st.video("https://www.youtube.com/watch?v=inpok4MKVLM")
 
     elif page == "📚 Chat History":
-        chat_history_page(username)
+        chat_history_page(email)
 
     elif page == "📔 Journal":
-        journal_page(username)
+        journal_page(email)
 
     elif page == "👤 Profile":
-        profile_page(username)
+        profile_page(email)
 
     elif page == "🚪 Logout":
         st.session_state.clear()

@@ -5,6 +5,16 @@ import requests
 import secrets
 import os
 from datetime import datetime, timedelta
+import bcrypt
+
+from database.database import (
+    find_user_by_email,
+    find_user_by_google_id,
+    add_user,
+    update_password,
+    add_google_id,
+    reset_tokens_collection
+)
 
 # Configuration
 CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
@@ -43,7 +53,7 @@ def show_forgot_password_form():
                 st.rerun()
         
         if submit_reset and email:
-            user = users_collection.find_one({"email": email})
+            user = find_user_by_email(email)
             if user:
                 token = generate_reset_token(email)
                 reset_link = f"{REDIRECT_URI}?token={token}"
@@ -67,10 +77,7 @@ def handle_password_reset():
                     confirm_password = st.text_input("Confirm Password", type="password")
                     if st.form_submit_button("Update Password"):
                         if new_password == confirm_password:
-                            users_collection.update_one(
-                                {"email": email},
-                                {"$set": {"password": new_password}}
-                            )
+                            update_password(email,new_password)
                             reset_tokens_collection.delete_one({"token": token})
                             st.success("Password updated successfully! Please login.")
                             st.session_state.password_reset_done = True
@@ -98,22 +105,23 @@ def login_page():
 
     # Main login form
     with st.form("login_form"):
-        username = st.text_input("Username")
+        email = st.text_input("Email")
         password = st.text_input("Password", type="password")
         
         # Login button
         login_clicked = st.form_submit_button("Login")
         
         if login_clicked:
-            user = users_collection.find_one({"username": username})
-            if user and user["password"] == password:
+            user = find_user_by_email(email)
+            if user and "password" in user and bcrypt.checkpw(password.encode(), user["password"].encode()):
                 st.session_state.user_email = user["email"]
+                st.session_state.user_data = user
                 st.success("Logged in successfully!")
                 st.rerun()
             else:
                 st.error("Invalid username or password")
 
-    # Forgot password button (using native Streamlit component)
+    # Forgot password button
     if st.button("Forgot password?"):
         st.session_state.show_forgot_password = True
         st.rerun()
@@ -143,9 +151,35 @@ def login_page():
             ).json()
             
             if "email" in userinfo:
-                st.session_state.user_email = userinfo["email"]
-                st.success(f"Logged in as {userinfo['email']}")
-                st.rerun()
+                email = userinfo["email"]
+                google_id = userinfo["sub"]
+                
+                # Check if user exists by Google ID
+                user = find_user_by_google_id(google_id)
+                if not user:
+                    # Check if user exists by email (manual registration)
+                    user = find_user_by_email(email)
+                    if user:
+                        # Link Google ID to existing account
+                        add_google_id(email, google_id)
+                    else:
+                        # Create new account
+                        add_user(
+                            email=email,
+                            google_id=google_id,
+                            username=userinfo.get("name", "")
+                        )
+                        #flag that user needs to set up password
+                        st.session_state.needs_password_setup = True
+
+                #set session state
+                st.session_state.user_email = email
+                st.session_state.user_data = user or find_user_by_email(email)
+
+                #only rerun if not in password setup mode
+                if not st.session_state.get("needs_password_setup", False):
+                    st.success(f"Logged in as {email}")
+                    st.rerun()
         except Exception as e:
             st.error(f"Google login failed: {str(e)}")
 
