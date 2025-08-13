@@ -6,6 +6,10 @@ import secrets
 import os
 from datetime import datetime, timedelta
 import bcrypt
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import ssl
 
 from database.database import (
     find_user_by_email,
@@ -29,13 +33,97 @@ oauth2 = OAuth2Component(
     token_endpoint="https://oauth2.googleapis.com/token"
 )
 
+def send_reset_email(email, reset_link):
+    """Send password reset email using Gmail SMTP"""
+    try:
+        # Configuration (use environment variables)
+        smtp_server = "smtp.gmail.com"
+        smtp_port = 587
+        sender_email = os.getenv("GMAIL_EMAIL", "your.app.email@gmail.com")
+        app_password = os.getenv("GMAIL_APP_PASSWORD", "your-app-password")
+        app_name = "Your App Name"
+        
+        # Create email content
+        subject = f"Password Reset Request for {app_name}"
+        
+        html_content = f"""
+        <html>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+                    <h2 style="color: #333;">Password Reset Request</h2>
+                    <p>Hello,</p>
+                    <p>You've requested to reset your password for {app_name}.</p>
+                    <p>Please click the button below to reset your password:</p>
+                    <p style="text-align: center; margin: 30px 0;">
+                        <a href="{reset_link}" style="
+                            display: inline-block;
+                            padding: 12px 24px;
+                            background-color: #4285F4;
+                            color: white;
+                            text-decoration: none;
+                            border-radius: 4px;
+                            font-weight: bold;
+                        ">Reset Password</a>
+                    </p>
+                    <p>This link will expire in 15 minutes.</p>
+                    <p>If you didn't request a password reset, please ignore this email.</p>
+                    <p>Best regards,<br>{app_name} Team</p>
+                    <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 20px 0;">
+                    <p style="font-size: 12px; color: #777;">
+                        For security reasons, please do not share this email with anyone.
+                    </p>
+                </div>
+            </body>
+        </html>
+        """
+        
+        # Create text version
+        text_content = f"""\
+Password Reset Request
+----------------------
+Hello,
+You've requested to reset your password for {app_name}.
+Please visit this link to reset your password: {reset_link}
+This link expires in 15 minutes.
+If you didn't request this, please ignore this email.
+"""
+        
+        # Create message
+        msg = MIMEMultipart()
+        msg["From"] = sender_email
+        msg["To"] = email
+        msg["Subject"] = subject
+        msg.attach(MIMEText(text_content, "plain"))
+        msg.attach(MIMEText(html_content, "html"))
+        
+        # Create secure SSL context
+        context = ssl.create_default_context()
+        
+        # Send email
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.ehlo()
+            server.starttls(context=context)
+            server.ehlo()
+            server.login(sender_email, app_password)
+            server.sendmail(sender_email, email, msg.as_string())
+        
+        st.success("Password reset email sent! Please check your inbox.")
+        return True
+            
+    except Exception as e:
+        st.error(f"Failed to send email: {str(e)}")
+        # Fallback to showing link in app
+        st.warning(f"Reset link: {reset_link}")
+        return False
+
 def generate_reset_token(email):
     token = secrets.token_urlsafe(32)
-    expires_at = datetime.now() + timedelta(hours=1)
+    expires_at = datetime.now() + timedelta(minutes=15)  # Shorter expiration
     reset_tokens_collection.insert_one({
         "token": token,
         "email": email,
-        "expires_at": expires_at
+        "expires_at": expires_at,
+        "used": False  # Track if token has been used
     })
     return token
 
@@ -57,18 +145,21 @@ def show_forgot_password_form():
             if user:
                 token = generate_reset_token(email)
                 reset_link = f"{REDIRECT_URI}?token={token}"
-                st.success(f"Password reset link generated (demo): {reset_link}")
+                send_reset_email(email, reset_link)  # Send actual email
                 st.session_state.show_forgot_password = False
                 st.rerun()
             else:
-                st.error("No account found with this email")
+                # Show generic message to prevent email enumeration
+                st.success("If an account exists with this email, a reset link will be sent")
+                st.session_state.show_forgot_password = False
+                st.rerun()
 
 def handle_password_reset():
     if "token" in st.query_params:
         token = st.query_params["token"]
         token_data = reset_tokens_collection.find_one({"token": token})
         
-        if token_data:
+        if token_data and not token_data.get("used", False):
             if datetime.now() < token_data["expires_at"]:
                 email = token_data["email"]
                 with st.form("reset_password_form"):
@@ -77,8 +168,14 @@ def handle_password_reset():
                     confirm_password = st.text_input("Confirm Password", type="password")
                     if st.form_submit_button("Update Password"):
                         if new_password == confirm_password:
-                            update_password(email,new_password)
-                            reset_tokens_collection.delete_one({"token": token})
+                            update_password(email, new_password)
+                            # Mark token as used instead of deleting
+                            reset_tokens_collection.update_one(
+                                {"token": token},
+                                {"$set": {"used": True}}
+                            )
+                            # Clear token from URL
+                            st.experimental_set_query_params()
                             st.success("Password updated successfully! Please login.")
                             st.session_state.password_reset_done = True
                             st.rerun()
@@ -88,7 +185,7 @@ def handle_password_reset():
                 st.error("Reset link has expired")
                 reset_tokens_collection.delete_one({"token": token})
         else:
-            st.error("Invalid reset link")
+            st.error("Invalid or expired reset link")
 
 def login_page():
     if not st.session_state.get("password_reset_done", False):
