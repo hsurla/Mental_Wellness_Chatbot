@@ -155,8 +155,11 @@ def show_forgot_password_form():
                 st.rerun()
 
 def handle_password_reset():
-    if "token" in st.query_params:
-        token = st.query_params["token"]
+    # Use st.query_params instead of st.experimental_get_query_params
+    query_params = st.query_params
+    token = query_params.get("token")
+    
+    if token:
         token_data = reset_tokens_collection.find_one({"token": token})
         
         if token_data and not token_data.get("used", False):
@@ -169,13 +172,16 @@ def handle_password_reset():
                     if st.form_submit_button("Update Password"):
                         if new_password == confirm_password:
                             update_password(email, new_password)
-                            # Mark token as used instead of deleting
+                            # Mark token as used
                             reset_tokens_collection.update_one(
                                 {"token": token},
                                 {"$set": {"used": True}}
                             )
-                            # Clear token from URL
-                            st.experimental_set_query_params()
+                            # Clear token from URL using new query_params API
+                            new_params = {k: v for k, v in query_params.items() if k != "token"}
+                            st.query_params.clear()
+                            st.query_params.update(new_params)
+                            
                             st.success("Password updated successfully! Please login.")
                             st.session_state.password_reset_done = True
                             st.rerun()
