@@ -115,7 +115,7 @@ def main():
         st.title(f"Hello, {display_name}!")
         page = st.radio(
             "Menu",
-            ["💬 Chatbot", "🧈 Wellness", "📚 Chat History", "📔 Journal", "👤 Profile", "🚪 Logout"],
+            ["💬 Chatbot", "🧈 Wellness", "📚 Chat History", "📔 Journal", "👤 Profile"],
             label_visibility="collapsed"
         )
         st.markdown("---")
@@ -126,6 +126,34 @@ def main():
                 st.write(f"{joke['setup']}\n\n{joke['delivery']}")
             else:
                 st.write(joke.get("joke", "Why don't scientists trust atoms? Because they make up everything!"))
+        
+        # Add the logout button at the bottom of the sidebar
+        st.markdown("---")
+        st.markdown(
+            """
+            <style>
+                .logout-button {
+                    background-color: transparent !important;
+                    border: none !important;
+                    color: inherit !important;
+                    width: 100%;
+                    text-align: left;
+                    padding: 0.5rem 1rem;
+                    border-radius: 0.5rem;
+                }
+                .logout-button:hover {
+                    background-color: rgba(250, 250, 250, 0.1) !important;
+                }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+        if st.button("🚪 Logout", key="logout", use_container_width=True):
+            st.session_state.clear()
+            st.success("Logged out successfully!")
+            time.sleep(1)
+            st.query_params.clear()
+            st.rerun()
 
     if page == "💬 Chatbot":
         st.title("💬 Mental Wellness Chatbot")
