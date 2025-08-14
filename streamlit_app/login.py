@@ -10,6 +10,7 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import ssl
+import re
 
 from database.database import (
     find_user_by_email,
@@ -137,18 +138,12 @@ def show_reset_form():
     with st.form("reset_password_form"):
         st.subheader("🔄 Reset Your Password")
         st.info(f"A 6-digit code has been sent to: **{st.session_state.reset_email}**")
-        st.caption("Check your inbox and enter the code below")
         
-        # Create 6 input fields for the code
-        cols = st.columns(6)
-        code_digits = []
-        for i, col in enumerate(cols):
-            with col:
-                digit = col.text_input(f"Digit {i+1}", max_chars=1, key=f"digit_{i}")
-                code_digits.append(digit)
-        
-        # Combine digits into a single code
-        reset_code = ''.join(code_digits)
+        # Single input for 6-digit code
+        reset_code = st.text_input("Enter 6-digit code", 
+                                  max_chars=6,
+                                  placeholder="123456",
+                                  help="Check your email for the reset code")
         
         # Password fields
         new_password = st.text_input("New Password", type="password")
@@ -158,9 +153,9 @@ def show_reset_form():
         submitted = st.form_submit_button("Update Password")
         
         if submitted:
-            # Validate code length
-            if len(reset_code) != 6:
-                st.error("Please enter a 6-digit code")
+            # Validate code format
+            if not reset_code.isdigit() or len(reset_code) != 6:
+                st.error("Please enter a valid 6-digit code")
                 return
                 
             # Validate password
