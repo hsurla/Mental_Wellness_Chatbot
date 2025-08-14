@@ -77,28 +77,11 @@ def send_reset_email(email, reset_code):
         </html>
         """
         
-        # Create text version
-        text_content = f"""\
-Password Reset Request
-----------------------
-Hello,
-You've requested to reset your password for {app_name}.
-
-Your reset code: {reset_code}
-This code expires in 15 minutes.
-
-Enter this code in the password reset form to proceed.
-
-Best regards,
-{app_name} Team
-"""
-        
         # Create message
         msg = MIMEMultipart()
         msg["From"] = f"{app_name} <{sender_email}>"
         msg["To"] = email
         msg["Subject"] = subject
-        msg.attach(MIMEText(text_content, "plain"))
         msg.attach(MIMEText(html_content, "html"))
         
         # Create secure SSL context
