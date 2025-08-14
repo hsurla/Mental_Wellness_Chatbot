@@ -33,7 +33,7 @@ oauth2 = OAuth2Component(
     token_endpoint="https://oauth2.googleapis.com/token"
 )
 
-def send_reset_email(email, reset_link):
+def send_reset_email(email, reset_code):
     """Send password reset email using Gmail SMTP"""
     try:
         # Configuration (use environment variables)
@@ -41,37 +41,36 @@ def send_reset_email(email, reset_link):
         smtp_port = 587
         sender_email = os.getenv("GMAIL_EMAIL", "your.app.email@gmail.com")
         app_password = os.getenv("GMAIL_APP_PASSWORD", "your-app-password")
-        app_name = "Your App Name"
+        app_name = "Mental Wellness Chatbot"
         
         # Create email content
-        subject = f"Password Reset Request for {app_name}"
+        subject = f"Password Reset Code for {app_name}"
         
         html_content = f"""
         <html>
             <body style="font-family: Arial, sans-serif; line-height: 1.6;">
                 <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
-                    <h2 style="color: #333;">Password Reset Request</h2>
+                    <h2 style="color: #333; text-align: center;">Password Reset Request</h2>
                     <p>Hello,</p>
-                    <p>You've requested to reset your password for {app_name}.</p>
-                    <p>Please click the button below to reset your password:</p>
-                    <p style="text-align: center; margin: 30px 0;">
-                        <a href="{reset_link}" style="
-                            display: inline-block;
-                            padding: 12px 24px;
-                            background-color: #4285F4;
-                            color: white;
-                            text-decoration: none;
-                            border-radius: 4px;
-                            font-weight: bold;
-                        ">Reset Password</a>
-                    </p>
-                    <p>This link will expire in 15 minutes.</p>
-                    <p>If you didn't request a password reset, please ignore this email.</p>
-                    <p>Best regards,<br>{app_name} Team</p>
-                    <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 20px 0;">
-                    <p style="font-size: 12px; color: #777;">
-                        For security reasons, please do not share this email with anyone.
-                    </p>
+                    <p>You've requested to reset your password for the <strong>{app_name}</strong>.</p>
+                    
+                    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center; margin: 25px 0;">
+                        <p style="margin: 0; font-size: 18px; font-weight: bold;">Your Reset Code:</p>
+                        <div style="font-size: 32px; font-weight: bold; letter-spacing: 3px; color: #4285F4; margin: 15px 0;">
+                            {reset_code}
+                        </div>
+                        <p style="margin: 0; font-size: 14px; color: #666;">(This code expires in 15 minutes)</p>
+                    </div>
+                    
+                    <p>Enter this code in the password reset form to proceed.</p>
+                    
+                    <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #e0e0e0;">
+                        <p>Best regards,<br>
+                        <strong>{app_name} Team</strong></p>
+                        <p style="font-size: 12px; color: #777;">
+                            For security reasons, please do not share this code with anyone.
+                        </p>
+                    </div>
                 </div>
             </body>
         </html>
@@ -83,14 +82,19 @@ Password Reset Request
 ----------------------
 Hello,
 You've requested to reset your password for {app_name}.
-Please visit this link to reset your password: {reset_link}
-This link expires in 15 minutes.
-If you didn't request this, please ignore this email.
+
+Your reset code: {reset_code}
+This code expires in 15 minutes.
+
+Enter this code in the password reset form to proceed.
+
+Best regards,
+{app_name} Team
 """
         
         # Create message
         msg = MIMEMultipart()
-        msg["From"] = sender_email
+        msg["From"] = f"{app_name} <{sender_email}>"
         msg["To"] = email
         msg["Subject"] = subject
         msg.attach(MIMEText(text_content, "plain"))
@@ -107,95 +111,144 @@ If you didn't request this, please ignore this email.
             server.login(sender_email, app_password)
             server.sendmail(sender_email, email, msg.as_string())
         
-        st.success("Password reset email sent! Please check your inbox.")
         return True
             
     except Exception as e:
         st.error(f"Failed to send email: {str(e)}")
-        # Fallback to showing link in app
-        st.warning(f"Reset link: {reset_link}")
         return False
 
-def generate_reset_token(email):
-    token = secrets.token_urlsafe(32)
-    expires_at = datetime.now() + timedelta(minutes=15)  # Shorter expiration
-    reset_tokens_collection.insert_one({
-        "token": token,
-        "email": email,
-        "expires_at": expires_at,
-        "used": False  # Track if token has been used
-    })
-    return token
+def generate_reset_code(email):
+    """Generate a 6-digit reset code"""
+    code = ''.join(secrets.choice('0123456789') for i in range(6))
+    expires_at = datetime.now() + timedelta(minutes=15)
+    reset_tokens_collection.update_one(
+        {"email": email},
+        {"$set": {
+            "code": code,
+            "expires_at": expires_at,
+            "used": False
+        }},
+        upsert=True
+    )
+    return code
+
+def show_reset_form():
+    """Show the password reset form with code verification"""
+    with st.form("reset_password_form"):
+        st.subheader("🔄 Reset Your Password")
+        st.info(f"A 6-digit code has been sent to: **{st.session_state.reset_email}**")
+        st.caption("Check your inbox and enter the code below")
+        
+        # Create 6 input fields for the code
+        cols = st.columns(6)
+        code_digits = []
+        for i, col in enumerate(cols):
+            with col:
+                digit = col.text_input(f"Digit {i+1}", max_chars=1, key=f"digit_{i}")
+                code_digits.append(digit)
+        
+        # Combine digits into a single code
+        reset_code = ''.join(code_digits)
+        
+        # Password fields
+        new_password = st.text_input("New Password", type="password")
+        confirm_password = st.text_input("Confirm Password", type="password")
+        
+        # Form submission
+        submitted = st.form_submit_button("Update Password")
+        
+        if submitted:
+            # Validate code length
+            if len(reset_code) != 6:
+                st.error("Please enter a 6-digit code")
+                return
+                
+            # Validate password
+            if new_password != confirm_password:
+                st.error("Passwords do not match")
+                return
+                
+            if len(new_password) < 8:
+                st.error("Password must be at least 8 characters")
+                return
+                
+            # Check reset code
+            token_data = reset_tokens_collection.find_one({"email": st.session_state.reset_email})
+            if token_data:
+                if datetime.now() > token_data["expires_at"]:
+                    st.error("Reset code has expired")
+                    return
+                    
+                if token_data.get("used", False):
+                    st.error("This code has already been used")
+                    return
+                    
+                if reset_code == token_data["code"]:
+                    # Update password
+                    update_password(st.session_state.reset_email, new_password)
+                    
+                    # Mark code as used
+                    reset_tokens_collection.update_one(
+                        {"email": st.session_state.reset_email},
+                        {"$set": {"used": True}}
+                    )
+                    
+                    st.success("Password updated successfully! Please login.")
+                    st.session_state.password_reset_done = True
+                    st.session_state.show_reset_form = False
+                    st.session_state.show_forgot_password = False
+                    if "reset_email" in st.session_state:
+                        del st.session_state.reset_email
+                    st.rerun()
+                else:
+                    st.error("Incorrect reset code")
+            else:
+                st.error("No reset request found for this email")
 
 def show_forgot_password_form():
-    with st.form("forgot_password_form"):
-        st.subheader("🔒 Reset Your Password")
-        email = st.text_input("Enter your registered email address")
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            submit_reset = st.form_submit_button("Send Reset Link")
-        with col2:
-            if st.form_submit_button("Cancel"):
-                st.session_state.show_forgot_password = False
-                st.rerun()
-        
-        if submit_reset and email:
-            user = find_user_by_email(email)
-            if user:
-                token = generate_reset_token(email)
-                reset_link = f"{REDIRECT_URI}?token={token}"
-                send_reset_email(email, reset_link)  # Send actual email
-                st.session_state.show_forgot_password = False
-                st.rerun()
-            else:
-                # Show generic message to prevent email enumeration
-                st.success("If an account exists with this email, a reset link will be sent")
-                st.session_state.show_forgot_password = False
-                st.rerun()
-
-def handle_password_reset():
-    # Use st.query_params instead of st.experimental_get_query_params
-    query_params = st.query_params
-    token = query_params.get("token")
+    """Show the forgot password workflow in a single tab"""
+    # Step 1: Email input
+    if "reset_email" not in st.session_state:
+        with st.form("forgot_password_form"):
+            st.subheader("🔒 Reset Your Password")
+            email = st.text_input("Enter your registered email address")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                submit_reset = st.form_submit_button("Send Reset Code")
+            with col2:
+                if st.form_submit_button("Cancel"):
+                    st.session_state.show_forgot_password = False
+                    st.rerun()
+            
+            if submit_reset and email:
+                user = find_user_by_email(email)
+                if user:
+                    reset_code = generate_reset_code(email)
+                    
+                    # Try to send email
+                    if send_reset_email(email, reset_code):
+                        st.session_state.reset_email = email
+                        st.rerun()
+                    else:
+                        st.warning("Email sending failed. Using demo code:")
+                        st.code(f"Reset code: {reset_code}")
+                        st.session_state.reset_email = email
+                        st.rerun()
+                else:
+                    # Show generic message to prevent email enumeration
+                    st.success("If an account exists with this email, a reset code will be sent")
+                    st.session_state.show_forgot_password = False
+                    st.rerun()
     
-    if token:
-        token_data = reset_tokens_collection.find_one({"token": token})
-        
-        if token_data and not token_data.get("used", False):
-            if datetime.now() < token_data["expires_at"]:
-                email = token_data["email"]
-                with st.form("reset_password_form"):
-                    st.subheader("🔄 Reset Your Password")
-                    new_password = st.text_input("New Password", type="password")
-                    confirm_password = st.text_input("Confirm Password", type="password")
-                    if st.form_submit_button("Update Password"):
-                        if new_password == confirm_password:
-                            update_password(email, new_password)
-                            # Mark token as used
-                            reset_tokens_collection.update_one(
-                                {"token": token},
-                                {"$set": {"used": True}}
-                            )
-                            # Clear token from URL using new query_params API
-                            new_params = {k: v for k, v in query_params.items() if k != "token"}
-                            st.query_params.clear()
-                            st.query_params.update(new_params)
-                            
-                            st.success("Password updated successfully! Please login.")
-                            st.session_state.password_reset_done = True
-                            st.rerun()
-                        else:
-                            st.error("Passwords do not match")
-            else:
-                st.error("Reset link has expired")
-                reset_tokens_collection.delete_one({"token": token})
-        else:
-            st.error("Invalid or expired reset link")
+    # Step 2: Code verification and password reset
+    else:
+        show_reset_form()
 
 def login_page():
     if not st.session_state.get("password_reset_done", False):
-        handle_password_reset()
+        # Handle password reset in the same tab
+        pass
     
     if 'user_email' in st.session_state:
         return True
