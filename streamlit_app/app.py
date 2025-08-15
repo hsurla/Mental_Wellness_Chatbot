@@ -23,7 +23,7 @@ from streamlit_app.fun_support import get_fun_activity, get_healthy_snack
 # Set page config
 st.set_page_config(
     page_title="Mental Wellness Chatbot",
-    layout="wide",
+    # layout="wide",
     initial_sidebar_state="expanded"
 )
 
