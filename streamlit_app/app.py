@@ -18,6 +18,7 @@ from streamlit_app.profile import profile_page
 from streamlit_app.journal import journal_page
 from streamlit_app.chat_history import chat_history_page
 from streamlit_app.chatbot import chat_with_bot
+from streamlit_app.wellness import wellness_center_page
 from streamlit_app.fun_support import get_fun_activity, get_healthy_snack
 
 # Set page config
@@ -183,24 +184,7 @@ def main():
             st.rerun()
 
     elif page == "🧈 Wellness":
-        st.title("🧈 Wellness Center")
-
-        col1, col2 = st.columns(2)
-        with col1:
-            st.header("Activity Suggestion")
-            st.info(get_fun_activity())
-            if st.button("Get new activity", key="activity"):
-                st.rerun()
-
-        with col2:
-            st.header("Healthy Snack Idea")
-            st.success(get_healthy_snack())
-            if st.button("Get new snack", key="snack"):
-                st.rerun()
-
-        st.markdown("---")
-        st.header("Mindfulness Exercise")
-        st.video("https://www.youtube.com/watch?v=inpok4MKVLM")
+        wellness_center_page()
 
     elif page == "📚 Chat History":
         chat_history_page(email)
