@@ -163,7 +163,6 @@ def meditation_suggestions():
             
         countdown.markdown("✅ **Time's up!** Hope you're feeling more relaxed.")
         progress_bar.empty()
-        st.balloons()
 
 @st.cache_data(ttl=3600)  # Cache for 1 hour
 def get_daily_tips():
